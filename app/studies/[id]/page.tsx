@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { ChevronLeft, Bookmark, Heart, Share2, MessageSquare, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
 import { VerseDisplay } from "@/components/verse-display"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export default function StudyPage({ params }: { params: { id: string } }) {
+export default function StudyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id }  = use(params);
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
@@ -24,9 +25,9 @@ export default function StudyPage({ params }: { params: { id: string } }) {
 
   // In a real app, you would fetch the study data based on the ID
   const studyData = {
-    title: params.id === "forgiveness" ? "Forgiveness" : "The Beatitudes",
+    title: id === "forgiveness" ? "Forgiveness" : "The Beatitudes",
     scriptures:
-      params.id === "forgiveness"
+      id === "forgiveness"
         ? [
             {
               reference: "Matthew 6:14-15",
@@ -60,7 +61,7 @@ export default function StudyPage({ params }: { params: { id: string } }) {
             },
           ],
     insights:
-      params.id === "forgiveness"
+      id === "forgiveness"
         ? [
             {
               title: "The Importance of Forgiveness",
@@ -96,7 +97,7 @@ export default function StudyPage({ params }: { params: { id: string } }) {
             },
           ],
     reflectionQuestions:
-      params.id === "forgiveness"
+      id === "forgiveness"
         ? [
             "Is there someone in your life you need to forgive? What is holding you back?",
             "How has experiencing God's forgiveness changed your ability to forgive others?",

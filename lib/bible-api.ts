@@ -13,8 +13,8 @@ export interface VerseResponse {
 }
 
 // API.Bible configuration
-const API_KEY = "a532731a88fea253a425c6a65a9aaa78"
-const API_URL = "https://api.scripture.api.bible/v1"
+const API_KEY = process.env.BIBLE_API_KEY || ""
+const API_URL = process.env.BIBLE_API_URL || ""
 
 // Bible IDs for different translations
 const BIBLE_IDS = {
@@ -712,7 +712,7 @@ const MOCK_SEARCH_RESULTS = {
  * @param query The search query
  * @param limit Maximum number of results to return
  */
-export function searchStudies(query: string, limit = 5): any[] {
+export async function searchStudies(query: string, limit = 5): Promise<any[]> {
   const normalizedQuery = query.toLowerCase().trim()
   const results = []
 
@@ -772,7 +772,7 @@ For example: "John 3:16, Romans 8:28, Philippians 4:13"`
 
     // Call Claude to get verse recommendations
     const { text } = await generateText({
-      model: anthropic("claude-3-haiku-20240307"),
+      model: anthropic(process.env.CLAUDE_MODEL || ""),
       prompt: prompt,
       temperature: 0.2, // Lower temperature for more focused results
       maxTokens: 200,
