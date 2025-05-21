@@ -1,8 +1,16 @@
-import Link from "next/link"
-import { BookOpen, Search, ArrowRight, Clock, Bookmark, TrendingUp } from "lucide-react"
-import BottomNavigation from "@/components/bottom-navigation"
+"use client";
+
+import BottomNavigation from "@/components/bottom-navigation";
+import useAuth from "@/lib/hooks/useAuth";
+import { ArrowRight, Bookmark, BookOpen, Clock, Search, TrendingUp } from "lucide-react";
+import Link from "next/link";
+
 
 export default function HomePage() {
+
+  const { user, loading } = useAuth();
+
+  
   // Daily verse
   const dailyVerse = {
     reference: "Psalm 119:105",
@@ -32,6 +40,9 @@ export default function HomePage() {
     },
   ]
 
+  // // If loading, show a simple loading indicator
+
+  // If authenticated, show the main app content
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}

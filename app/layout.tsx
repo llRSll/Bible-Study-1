@@ -1,10 +1,10 @@
-import type React from "react"
+import { ThemeProvider } from "@/components/theme-provider"
+import { UserPreferencesProvider } from "@/contexts/user-preferences"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import type React from "react"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import BottomNavigation from "@/components/bottom-navigation"
-import { UserPreferencesProvider } from "@/contexts/user-preferences"
+import ClientBottomNav from "@/components/ClientBottomNav"
 
 // Use Inter as the primary font
 const inter = Inter({
@@ -29,8 +29,9 @@ export default function RootLayout({
       <body className="min-h-screen bg-white font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <UserPreferencesProvider>
+
             <div className="pb-14">{children}</div>
-            <BottomNavigation />
+            <ClientBottomNav />
           </UserPreferencesProvider>
         </ThemeProvider>
       </body>
