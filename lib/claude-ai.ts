@@ -209,7 +209,7 @@ Please provide a biblically-based answer with scripture references. Remember to 
 
     // Generate response using Claude
     const { text } = await generateText({
-      model: anthropic(process.env.CLAUDE_MODEL || ""),
+      model: anthropic(process.env.CLAUDE_MODEL!),
       system: BIBLE_SYSTEM_PROMPT,
       prompt: prompt,
       temperature: 0.7,
@@ -446,7 +446,7 @@ export async function generateBibleStudy(topic: string, type = "topic"): Promise
 
     // Generate response using Claude
     const { text } = await generateText({
-      model: anthropic(process.env.CLAUDE_MODEL || ""),
+      model: anthropic(process.env.CLAUDE_MODEL!),
       system: STUDY_SYSTEM_PROMPT,
       prompt: prompt,
       temperature: 0.7,

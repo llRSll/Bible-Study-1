@@ -13,8 +13,8 @@ export interface VerseResponse {
 }
 
 // API.Bible configuration
-const API_KEY = process.env.BIBLE_API_KEY || ""
-const API_URL = process.env.BIBLE_API_URL || ""
+const API_KEY = process.env.BIBLE_API_KEY!
+const API_URL = process.env.BIBLE_API_URL!
 
 // Bible IDs for different translations
 const BIBLE_IDS = {
@@ -772,7 +772,7 @@ For example: "John 3:16, Romans 8:28, Philippians 4:13"`
 
     // Call Claude to get verse recommendations
     const { text } = await generateText({
-      model: anthropic(process.env.CLAUDE_MODEL || ""),
+      model: anthropic(process.env.CLAUDE_MODEL!),
       prompt: prompt,
       temperature: 0.2, // Lower temperature for more focused results
       maxTokens: 200,
