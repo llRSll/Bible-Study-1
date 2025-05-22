@@ -13,17 +13,17 @@ export interface VerseResponse {
 }
 
 // API.Bible configuration
-const API_KEY = "a532731a88fea253a425c6a65a9aaa78";
-const API_URL = "https://api.scripture.api.bible/v1";
+const API_KEY = process.env.BIBLE_API_KEY!
+const API_URL = process.env.BIBLE_API_URL!
 
 // Bible IDs for different translations
 const BIBLE_IDS = {
-  ESV: "06125adad2d5898a-01", // English Standard Version
-  KJV: "de4e12af7f28f599-01", // King James Version
-  NIV: "78a9f6124f344018-01", // New International Version
-  NASB: "01b29f4b342acc35-01", // New American Standard Bible
-  NLT: "65eec8e0b60e656b-01", // New Living Translation
-};
+  ESV: process.env.BIBLE_ID_ESV!, // English Standard Version
+  KJV: process.env.BIBLE_ID_KJV!, // King James Version
+  NIV: process.env.BIBLE_ID_NIV!, // New International Version
+  NASB: process.env.BIBLE_ID_NASB!, // New American Standard Bible
+  NLT: process.env.BIBLE_ID_NLT!, // New Living Translation
+}
 
 // Default Bible ID if translation not found
 const DEFAULT_BIBLE_ID = BIBLE_IDS.ESV;
@@ -830,8 +830,8 @@ const MOCK_SEARCH_RESULTS = {
  * @param limit Maximum number of results to return
  */
 export async function searchStudies(query: string, limit = 5): Promise<any[]> {
-  const normalizedQuery = query.toLowerCase().trim();
-  const results = [];
+  const normalizedQuery = query.toLowerCase().trim()
+  const results = []
 
   // Search through our studies database
   for (const study of STUDIES_DATABASE) {
@@ -895,7 +895,7 @@ For example: "John 3:16, Romans 8:28, Philippians 4:13"`;
 
     // Call Claude to get verse recommendations
     const { text } = await generateText({
-      model: anthropic("claude-3-haiku-20240307"),
+      model: anthropic(process.env.CLAUDE_MODEL!),
       prompt: prompt,
       temperature: 0.2, // Lower temperature for more focused results
       maxTokens: 200,

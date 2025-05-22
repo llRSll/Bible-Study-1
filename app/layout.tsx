@@ -16,7 +16,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Bible Study",
   description: "AI-powered Bible studies that remain true to Biblical teachings",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -25,9 +25,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="min-h-screen bg-white font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className="min-h-screen bg-white font-sans antialiased" suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <UserPreferencesProvider>
 
             <div className="pb-14">{children}</div>
