@@ -18,11 +18,11 @@ const API_URL = process.env.BIBLE_API_URL!
 
 // Bible IDs for different translations
 const BIBLE_IDS = {
-  ESV: "06125adad2d5898a-01", // English Standard Version
-  KJV: "de4e12af7f28f599-01", // King James Version
-  NIV: "78a9f6124f344018-01", // New International Version
-  NASB: "01b29f4b342acc35-01", // New American Standard Bible
-  NLT: "65eec8e0b60e656b-01", // New Living Translation
+  ESV: process.env.BIBLE_ID_ESV!, // English Standard Version
+  KJV: process.env.BIBLE_ID_KJV!, // King James Version
+  NIV: process.env.BIBLE_ID_NIV!, // New International Version
+  NASB: process.env.BIBLE_ID_NASB!, // New American Standard Bible
+  NLT: process.env.BIBLE_ID_NLT!, // New Living Translation
 }
 
 // Default Bible ID if translation not found
