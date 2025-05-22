@@ -1,14 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { User, Heart, Clock, Settings, Bell, Shield, Moon, Book, LogOut } from "lucide-react"
-import Link from "next/link"
+import { Switch } from "@/components/ui/switch"
+import { useToast } from "@/components/ui/use-toast"
 import { useUserPreferences } from "@/contexts/user-preferences"
+import { getUserProfile, updateProfile, uploadProfilePicture } from "@/lib/actions/profile"
+import { formatDistanceToNow } from "date-fns"
+import { Bell, Book, Clock, Edit, Heart, Loader2, LogOut, Moon, Settings, Shield, Upload, User } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { useEffect, useRef, useState } from "react"
 
 // Default preferences as fallback
 const defaultPreferences = {
@@ -23,55 +28,194 @@ export default function ProfilePage() {
   const { preferences, updatePreference } = useUserPreferences()
   const contextPreferences = preferences || defaultPreferences
   const contextUpdatePreference = updatePreference || ((_key: string, _value: any) => {})
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
   const [isClient, setIsClient] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [profileData, setProfileData] = useState<any>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [fullName, setFullName] = useState("")
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
 
-  // Only run client-side code after component mounts
+  // Fetch user profile data
   useEffect(() => {
-    setIsClient(true)
+    const fetchProfile = async () => {
+      setLoading(true)
+      try {
+        const result = await getUserProfile()
+        if (result.error) {
+          console.error("Error fetching profile:", result.error)
+        } else if (result.data) {
+          setProfileData(result.data)
+          setFullName(result.data.full_name || "")
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err)
+      } finally {
+        setLoading(false)
+        setIsClient(true)
+      }
+    }
+
+    fetchProfile()
   }, [])
 
-  const savedStudies = [
-    {
-      id: "1",
-      title: "The Beatitudes",
-      date: "2 days ago",
-      verses: "Matthew 5:1-12",
-    },
-    {
-      id: "2",
-      title: "Faith of Abraham",
-      date: "1 week ago",
-      verses: "Genesis 12-22",
-    },
-  ]
+  // Helper to format date for studies
+  const formatDate = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true })
+    } catch (e) {
+      return "Recently"
+    }
+  }
 
-  const recentStudies = [
-    {
-      id: "3",
-      title: "Fruits of the Spirit",
-      date: "Today",
-      verses: "Galatians 5:22-23",
-    },
-    {
-      id: "1",
-      title: "The Beatitudes",
-      date: "2 days ago",
-      verses: "Matthew 5:1-12",
-    },
-  ]
+  // Handle profile update
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const formData = new FormData()
+    formData.append("full_name", fullName)
+    
+    try {
+      const result = await updateProfile(formData)
+      if (result.error) {
+        toast({
+          title: "Error updating profile",
+          description: result.error.message || "An error occurred",
+          variant: "destructive",
+        })
+      } else {
+        setProfileData({ ...profileData, full_name: fullName })
+        setIsEditing(false)
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been updated successfully",
+        })
+      }
+    } catch (err) {
+      console.error("Error updating profile:", err)
+      toast({
+        title: "Error updating profile",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Handle file selection for profile picture
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    setUploadingImage(true)
+    
+    const formData = new FormData()
+    formData.append("profile_picture", file)
+    
+    try {
+      const result = await uploadProfilePicture(formData)
+      if (result.error) {
+        toast({
+          title: "Error uploading image",
+          description: result.error.message || "An error occurred",
+          variant: "destructive",
+        })
+      } else {
+        setProfileData({ ...profileData, profile_picture: result.data.profile_picture })
+        toast({
+          title: "Profile picture updated",
+          description: "Your profile picture has been updated successfully",
+        })
+      }
+    } catch (err) {
+      console.error("Error uploading profile picture:", err)
+      toast({
+        title: "Error uploading image",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setUploadingImage(false)
+    }
+  }
 
   // Add a handler for translation change
   const handleTranslationChange = (translation: string) => {
     contextUpdatePreference("preferredTranslation", translation)
   }
 
+  // Handle logout
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      const { createClient } = await import('@/utils/supabase/client');
+      const supabase = createClient();
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        toast({
+          title: "Error logging out",
+          description: error.message || "An error occurred",
+          variant: "destructive",
+        });
+        setLoggingOut(false);
+      } else {
+        toast({
+          title: "Logged out successfully",
+          description: "You have been logged out of your account"
+        });
+        // Redirect to login page
+        window.location.href = 'auth/login';
+      }
+    } catch (err) {
+      console.error("Error during logout:", err);
+      toast({
+        title: "Error logging out",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+      setLoggingOut(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-white items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-slate-500">Loading profile...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
-      <header className="pt-12 pb-6 px-6">
-        <h1 className="text-4xl font-extrabold tracking-tight mb-1">Profile</h1>
-        <p className="text-slate-500 text-lg">Manage your account</p>
+      <header className="pt-12 pb-6 px-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight mb-1">Profile</h1>
+          <p className="text-slate-500 text-lg">Manage your account</p>
+        </div>
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2 text-slate-700"
+          onClick={handleLogout}
+          disabled={loggingOut}
+        >
+          {loggingOut ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Logging out...
+            </>
+          ) : (
+            <>
+              <LogOut className="h-4 w-4" />
+              Log out
+            </>
+          )}
+        </Button>
       </header>
 
       {/* Main Content */}
@@ -80,19 +224,86 @@ export default function ProfilePage() {
         <section className="mb-8">
           <Card className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
-                <User className="h-8 w-8 text-slate-400" />
+              <div className="relative">
+                <div className={`h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden ${isEditing ? 'cursor-pointer' : ''}`} onClick={isEditing ? () => fileInputRef.current?.click() : undefined}>
+                  {profileData?.profile_picture ? (
+                    <Image 
+                      src={profileData.profile_picture} 
+                      alt="Profile" 
+                      width={64} 
+                      height={64} 
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <User className="h-8 w-8 text-slate-400" />
+                  )}
+                  {isEditing && (
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                      <Edit className="h-6 w-6 text-white" />
+                    </div>
+                  )}
+                </div>
+                {!isEditing && (
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1"
+                    disabled={uploadingImage}
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Upload className="h-3 w-3" />
+                    )}
+                  </button>
+                )}
+
+                {/* Hidden file input for profile picture upload */}
+                <input 
+                  name="profile_picture"
+                
+                  ref={fileInputRef}
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  disabled={uploadingImage}
+                />
               </div>
-              <div>
-                <h2 className="text-xl font-bold">Guest User</h2>
-                <p className="text-slate-500">Create an account to sync your studies across devices</p>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-4">
-              <Button className="flex-1">Sign Up</Button>
-              <Button variant="outline" className="flex-1">
-                Log In
-              </Button>
+              
+              {isEditing ? (
+                <form onSubmit={handleUpdateProfile} className="flex-1">
+                  <div className="mb-4">
+                    <Label htmlFor="full_name">Name</Label>
+                    <Input 
+                      id="full_name" 
+                      value={fullName} 
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" type="button" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      Save
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-xl font-bold">{profileData?.full_name || "Anonymous User"}</h2>
+                      <p className="text-slate-500">{profileData?.email}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </section>
@@ -104,15 +315,15 @@ export default function ProfilePage() {
             <h2 className="text-2xl font-bold">Saved Studies</h2>
           </div>
 
-          {savedStudies.length > 0 ? (
+          {profileData?.savedStudiesData && profileData.savedStudiesData.length > 0 ? (
             <div className="space-y-4">
-              {savedStudies.map((study) => (
+              {profileData.savedStudiesData.map((study: any) => (
                 <Link key={study.id} href={`/studies/${study.id}`} className="block">
                   <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
                     <h3 className="font-bold text-xl mb-2">{study.title}</h3>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-500 text-sm">{study.verses}</span>
-                      <span className="text-slate-500 text-sm">{study.date}</span>
+                      <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
+                      <span className="text-slate-500 text-sm">{study.lastReadTime ? formatDate(study.lastReadTime) : "Not read yet"}</span>
                     </div>
                   </div>
                 </Link>
@@ -137,15 +348,15 @@ export default function ProfilePage() {
             <h2 className="text-2xl font-bold">Recent Studies</h2>
           </div>
 
-          {recentStudies.length > 0 ? (
+          {profileData?.recentStudiesData && profileData.recentStudiesData.length > 0 ? (
             <div className="space-y-4">
-              {recentStudies.map((study) => (
+              {profileData.recentStudiesData.map((study: any) => (
                 <Link key={study.id} href={`/studies/${study.id}`} className="block">
                   <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
                     <h3 className="font-bold text-xl mb-2">{study.title}</h3>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-500 text-sm">{study.verses}</span>
-                      <span className="text-slate-500 text-sm">{study.date}</span>
+                      <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
+                      <span className="text-slate-500 text-sm">{study.lastReadTime ? formatDate(study.lastReadTime) : "Recently"}</span>
                     </div>
                   </div>
                 </Link>
@@ -311,13 +522,10 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-center gap-2 text-red-500 border-red-100 hover:bg-red-50"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
+            {/* Instead of the button, add a note about privacy */}
+            <p className="text-center text-sm text-slate-500 mt-4">
+              Your privacy and security are important to us.
+            </p>
           </section>
         )}
       </main>

@@ -1,18 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Plus, Search, TrendingUp, ArrowRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import Link from "next/link"
+import { getStudies, getStudiesByCategory, type Study } from "@/lib/actions/study"
 import { motion } from "framer-motion"
+import { ArrowRight, BookOpen, Plus, Search, TrendingUp } from "lucide-react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
 
 export default function StudiesPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeCategory, setActiveCategory] = useState("all")
+  const [studies, setStudies] = useState<Study[]>([])
 
-  // In a real app, you would fetch these from an API
+
   const featuredStudies = [
     {
       id: "forgiveness",
@@ -65,26 +67,49 @@ export default function StudiesPage() {
     "Spiritual Disciplines",
   ]
 
+  // Fetch studies based on active category
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 1000)
-    return () => clearTimeout(timer)
-  }, [])
+    const fetchStudies = async () => {
+      setLoading(true)
+      
+      try {
+        let result;
+        
+        if (activeCategory === "all") {
+          result = await getStudies();
+          console.log("result form getStudies", result);
+        } else {
+          console.log("activeCategory", activeCategory);
+          result = await getStudiesByCategory(activeCategory);
+          console.log(result);
+        }
+        
+        if (result.error) {
+          console.error("Error fetching studies:", result.error);
+          setStudies([]);
+        } else if (result.data) {
+          setStudies(result.data);
+        }
+      } catch (error) {
+        console.error("Error fetching studies:", error);
+        setStudies([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStudies();
+  }, [activeCategory]);
 
-  // Filter studies based on search query and active category
-  const filteredStudies = featuredStudies.filter((study) => {
-    const matchesSearch =
+  // Filter studies based on search query
+  const filteredStudies = studies.filter((study) => {
+    return (
       searchQuery === "" ||
       study.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      study.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      study.verses.toLowerCase().includes(searchQuery.toLowerCase())
-
-    const matchesCategory = activeCategory === "all" || study.category.toLowerCase() === activeCategory.toLowerCase()
-
-    return matchesSearch && matchesCategory
-  })
+      (study.context || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      study.verses.some(verse => verse.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  });
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -168,9 +193,9 @@ export default function StudiesPage() {
                       <h3 className="font-bold text-xl">{study.title}</h3>
                       <span className="text-slate-500 text-sm">{study.readTime}</span>
                     </div>
-                    <p className="text-slate-600 mb-3">{study.description}</p>
+                    <p className="text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-500 text-sm">{study.verses}</span>
+                      <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
                       <span className="text-primary text-sm font-medium flex items-center">
                         Start reading
                         <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -187,16 +212,19 @@ export default function StudiesPage() {
               </div>
               <h2 className="text-xl font-semibold mb-2">No studies found</h2>
               <p className="text-slate-500 max-w-md mx-auto mb-6">
-                We couldn't find any studies matching your search criteria.
+                {searchQuery ? 
+                  "We couldn't find any studies matching your search criteria." :
+                  "You haven't created any studies yet. Click the Create button to get started."}
               </p>
-              <Button
-                onClick={() => {
-                  setSearchQuery("")
-                  setActiveCategory("all")
-                }}
-              >
-                Clear Filters
-              </Button>
+              {searchQuery && (
+                <Button
+                  onClick={() => {
+                    setSearchQuery("")
+                  }}
+                >
+                  Clear Search
+                </Button>
+              )}
             </div>
           )}
         </section>
