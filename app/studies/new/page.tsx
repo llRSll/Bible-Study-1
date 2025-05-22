@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sparkles, ArrowRight, Lightbulb, ChevronLeft } from "lucide-react"
-import { generateBibleStudy } from "@/lib/claude-ai"
+import { generateBibleStudy, Insight, BibleStudy } from "@/lib/claude-ai"
 import { Skeleton } from "@/components/ui/skeleton"
 import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/components/ui/use-toast"
@@ -19,7 +19,7 @@ import { VerseDisplay } from "@/components/verse-display"
 export default function NewStudyPage() {
   const [topic, setTopic] = useState("")
   const [loading, setLoading] = useState(false)
-  const [study, setStudy] = useState<any>(null)
+  const [study, setStudy] = useState<BibleStudy | null>(null)
   const [activeTab, setActiveTab] = useState("topic")
   const { toast } = useToast()
 
@@ -227,10 +227,10 @@ export default function NewStudyPage() {
                   <p className="insight-content">{study.context}</p>
                 </div>
 
-                {study.keyPoints.map((point: string, index: number) => (
+                {study.insights.map((insight: Insight, index: number) => (
                   <div key={index} className="insight-card">
-                    <h3 className="insight-title">Key Point {index + 1}</h3>
-                    <p className="insight-content">{point}</p>
+                    <h3 className="insight-title">{insight.title}</h3>
+                    <p className="insight-content">{insight.description}</p>
                   </div>
                 ))}
               </div>

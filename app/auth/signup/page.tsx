@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import SupabaseService from "../../../lib/services/supabaseService";
+import { signup } from "../actions";
 
 
 export default function Signup() {
@@ -11,25 +10,6 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    
-    const redirectTo = (typeof window !== "undefined" ? window.location.origin : "") + "/auth/login";
-    const { error, success } = await SupabaseService.auth.signUp(email, password, redirectTo);
-    
-    setLoading(false);
-    
-    if (!success) {
-      setError(error);
-    } else {
-      alert("Check your email for a confirmation link.");
-      router.push("/auth/login");
-    }
-  }
 
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -55,7 +35,7 @@ export default function Signup() {
           </div>
         )}
         
-        <form className="mt-8 space-y-6" onSubmit={handleSignup}>
+        <form className="mt-8 space-y-6">
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -98,6 +78,7 @@ export default function Signup() {
           <div>
             <button
               type="submit"
+              formAction={signup}
               disabled={loading}
               className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
