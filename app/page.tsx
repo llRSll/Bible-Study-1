@@ -1,14 +1,11 @@
 "use client";
 
 import BottomNavigation from "@/components/bottom-navigation";
-import useAuth from "@/lib/hooks/useAuth";
 import { ArrowRight, Bookmark, BookOpen, Clock, Search, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 
 export default function HomePage() {
-
-  const { user, loading } = useAuth();
 
   
   // Daily verse
