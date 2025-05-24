@@ -1,13 +1,50 @@
 "use client";
 
+import LoginButton from "@/components/ui/login-button";
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { login } from "../../../lib/actions/auth";
+import { ValidationError, validateLoginForm } from "../../../lib/utils/validations";
+
 
 export default function Login() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationError>({});
 
+  useEffect(() => {
+    // Check for success message from URL query params (after signup)
+    const message = searchParams.get("message");
+    if (message) {
+      setSuccess(message);
+    }
+  }, [searchParams]);
+
+  const validateForm = (): boolean => {
+    const errors = validateLoginForm(email, password);
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  async function handleLogin(formData: FormData) {
+    setError(null);
+    setSuccess(null);
+    
+    // Frontend validation
+    if (!validateForm()) {
+      return;
+    }
+    
+    const result = await login(formData);
+    
+    if (result?.error) {
+      setError(result.error);
+    }
+  }
 
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -22,8 +59,29 @@ export default function Login() {
           </p>
         </div>
      
+        {error && (
+          <div className="rounded-md bg-red-50 p-4 mb-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <div className="mt-2 text-sm text-red-700">{error}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {success && (
+          <div className="rounded-md bg-green-50 p-4 mb-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">Success</h3>
+                <div className="mt-2 text-sm text-green-700">{success}</div>
+              </div>
+            </div>
+          </div>
+        )}
         
-        <form className="mt-8 space-y-6" >
+        <form action={handleLogin} className="mt-8 space-y-6" >
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -36,10 +94,22 @@ export default function Login() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-             
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (validationErrors.email) {
+                    setValidationErrors({
+                      ...validationErrors,
+                      email: undefined
+                    });
+                  }
+                }}
+                className={`mt-1 block w-full rounded-md border ${
+                  validationErrors.email ? "border-red-500" : "border-gray-300"
+                } px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
               />
+              {validationErrors.email && (
+                <p className="mt-1 text-xs text-red-600">{validationErrors.email}</p>
+              )}
             </div>
             
             <div>
@@ -53,20 +123,27 @@ export default function Login() {
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (validationErrors.password) {
+                    setValidationErrors({
+                      ...validationErrors,
+                      password: undefined
+                    });
+                  }
+                }}
+                className={`mt-1 block w-full rounded-md border ${
+                  validationErrors.password ? "border-red-500" : "border-gray-300"
+                } px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
               />
+              {validationErrors.password && (
+                <p className="mt-1 text-xs text-red-600">{validationErrors.password}</p>
+              )}
             </div>
           </div>
 
           <div>
-            <button
-            formAction={login}
-              type="submit"
-              className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {  "Login"}
-            </button>
+            <LoginButton />
           </div>
         </form>
       </div>

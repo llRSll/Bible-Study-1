@@ -1,11 +1,15 @@
 "use client"
 
+import { LikeButton } from "@/components/like-button"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
 import { VerseDisplay } from "@/components/verse-display"
+import { getCurrentUser } from "@/lib/actions/auth"
 import { addToRecentStudies, getUserProfile, saveStudy, unsaveStudy } from "@/lib/actions/profile"
-import { getStudyById, updateLastReadTime, type Study } from "@/lib/actions/study"
-import { Bookmark, ChevronLeft, ChevronRight, Copy, Heart, MessageSquare, Share2 } from "lucide-react"
+import { getStudyById, type Study, toggleStudyPublicStatus } from "@/lib/actions/study"
+import { Bookmark, ChevronLeft, ChevronRight, EyeIcon, EyeOffIcon, Loader2, MessageSquare, Share2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { use, useEffect, useState } from "react"
@@ -19,13 +23,15 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
   const pathname = usePathname();
   const [loading, setLoading] = useState(true)
   const [study, setStudy] = useState<Study | null>(null)
-  const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
   const [bookmarkLoading, setBookmarkLoading] = useState(false)
   const [translation, setTranslation] = useState("ESV")
+  const [publishLoading, setPublishLoading] = useState(false)
   const { toast } = useToast()
   const [error, setError] = useState<string | null>(null)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [isCurrentUserOwner, setIsCurrentUserOwner] = useState(false)
+
 
   // Check if the study is bookmarked
   useEffect(() => {
@@ -68,15 +74,13 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
           setStudy(result.data);
           setError(null);
           
-          // Update lastReadTime and add to recent studies
-          // We don't need to await these or handle their errors as they're background operations
-          updateLastReadTime(id).catch(err => 
-            console.error("Error updating last read time:", err)
-          );
+          // Check if current user is the owner
+          const { data } = await getCurrentUser();
+          setIsCurrentUserOwner(data?.id === result.data.user_id);
           
-          addToRecentStudies(id).catch(err => 
-            console.error("Error adding to recent studies:", err)
-          );
+          // Add to recent studies if not already done. If already done, update the last read time
+           addToRecentStudies(id);
+         
         }
       } catch (err) {
         console.error("Error fetching study:", err);
@@ -139,6 +143,49 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
       setBookmarkLoading(false);
     }
   };
+  
+  const handlePrivacyToggle = async () => {
+    if (!study?.id) return;
+    
+    setPublishLoading(true);
+    try {
+      const { data, error } = await toggleStudyPublicStatus(study.id);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update study privacy",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update the local study state with the updated isPublic value
+      setStudy({
+        ...study,
+        isPublic: data.isPublic,
+      });
+      
+      toast({
+        title: data.isPublic ? "Study Published" : "Study Unpublished",
+        description: data.isPublic 
+          ? "Your study is now public and can be viewed by others." 
+          : "Your study is now private and only visible to you.",
+        duration: 2000,
+      });
+    } catch (err) {
+      console.error("Error toggling privacy:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update study privacy. Please try again.",
+        duration: 2000,
+        variant: "destructive",
+      });
+    } finally {
+      setPublishLoading(false);
+    }
+  };
+
 
   const handleShare = () => {
     setShareDialogOpen(true);
@@ -172,22 +219,16 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
           <Link href="/studies" className="back-button">
             <ChevronLeft className="h-6 w-6" />
           </Link>
-          <h1 className="header-title">Loading...</h1>
+          <h1 className="header-title">Loading Study</h1>
         </div>
-        <div className="study-content">
-          <div className="h-8 w-3/4 loading-skeleton mb-4"></div>
-
-          <div className="h-5 w-1/3 loading-skeleton mb-4"></div>
-          <div className="h-32 loading-skeleton mb-4"></div>
-          <div className="h-32 loading-skeleton mb-4"></div>
-
-          <div className="h-5 w-1/3 loading-skeleton mb-4"></div>
-          <div className="h-24 loading-skeleton mb-4"></div>
-          <div className="h-24 loading-skeleton mb-4"></div>
-
-          <div className="h-5 w-1/3 loading-skeleton mb-4"></div>
-          <div className="h-16 loading-skeleton mb-4"></div>
-          <div className="h-16 loading-skeleton mb-4"></div>
+        <div className="flex flex-col items-center justify-center flex-1 p-6">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Loading study...</h2>
+            {/* <p className="text-slate-500 max-w-md mx-auto">
+              Please wait while we load the Bible study content for you
+            </p> */}
+          </div>
         </div>
       </div>
     )
@@ -230,7 +271,27 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       <div className="study-content">
-        <h1 className="study-title">{study.title}</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="study-title">{study.title}</h1>
+          {isCurrentUserOwner && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {study.isPublic ? "Public" : "Private"}
+              </span>
+              <Switch 
+                checked={study.isPublic}
+                onCheckedChange={handlePrivacyToggle}
+                disabled={publishLoading}
+                aria-label="Toggle study privacy"
+              />
+              {study.isPublic ? (
+                <EyeIcon className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <EyeOffIcon className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-end mb-4">
           <Select value={translation} onValueChange={handleTranslationChange}>
@@ -297,6 +358,19 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
             </div>
           </>
         )}
+        
+        {study.relatedTopics && study.relatedTopics.length > 0 && (
+          <>
+            <h2 className="section-title">Topics</h2>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {study.relatedTopics.map((topic) => (
+                <Badge key={topic} variant="secondary">
+                  {topic}
+                </Badge>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
@@ -328,13 +402,10 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
           >
             <Bookmark className="action-icon" fill={bookmarked ? "currentColor" : "none"} />
           </button>
-          <button
-            className={`action-button ${liked ? "active" : ""}`}
-            onClick={() => setLiked(!liked)}
-            aria-label="Like"
-          >
-            <Heart className="action-icon" fill={liked ? "currentColor" : "none"} />
-          </button>
+           <LikeButton 
+           studyId={study.id || ""} 
+           initialLikes={study.likes || 0}
+         />
           <button 
             className="action-button" 
             aria-label="Share"
@@ -342,6 +413,9 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
           >
             <Share2 className="action-icon" />
           </button>
+         
+          
+      
           <button 
             className="action-button" 
             aria-label="Comment"

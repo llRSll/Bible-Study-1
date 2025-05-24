@@ -10,10 +10,12 @@ import { useToast } from "@/components/ui/use-toast"
 import { useUserPreferences } from "@/contexts/user-preferences"
 import { getUserProfile, updateProfile, uploadProfilePicture } from "@/lib/actions/profile"
 import { formatDistanceToNow } from "date-fns"
-import { Bell, Book, Clock, Edit, Heart, Loader2, LogOut, Moon, Settings, Shield, Upload, User } from "lucide-react"
+import { ArrowRight, Bell, Book, Clock, Edit, Heart, Loader2, LogOut, Moon, Settings, Shield, Upload, User } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
+
+import { motion } from "framer-motion"
 
 // Default preferences as fallback
 const defaultPreferences = {
@@ -50,6 +52,8 @@ export default function ProfilePage() {
         } else if (result.data) {
           setProfileData(result.data)
           setFullName(result.data.full_name || "")
+
+          console.log("profileData", result.data.savedStudiesData)
         }
       } catch (err) {
         console.error("Error fetching profile:", err)
@@ -316,19 +320,46 @@ export default function ProfilePage() {
           </div>
 
           {profileData?.savedStudiesData && profileData.savedStudiesData.length > 0 ? (
-            <div className="space-y-4">
-              {profileData.savedStudiesData.map((study: any) => (
-                <Link key={study.id} href={`/studies/${study.id}`} className="block">
-                  <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <h3 className="font-bold text-xl mb-2">{study.title}</h3>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
-                      <span className="text-slate-500 text-sm">{study.lastReadTime ? formatDate(study.lastReadTime) : "Not read yet"}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+
+
+<motion.div
+initial={{ opacity: 0 }}
+animate={{ opacity: 1 }}
+transition={{ duration: 0.3 }}
+className="space-y-4"
+>
+{profileData.savedStudiesData.map((study: any) => (
+  <Link key={study.id} href={`/studies/${study.id}`} className="block">
+    <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="font-bold text-xl">{study.title}</h3>
+        <div className="flex items-center gap-2">
+          {/* {study.isPublic !== undefined && (
+            <span className="text-xs bg-slate-100 py-1 px-2 rounded-full">
+              {study.isPublic ? "Public" : "Private"}
+            </span>
+          )}
+          {study.likes && study.likes > 0 && (
+            <span className="text-xs bg-slate-100 py-1 px-2 rounded-full flex items-center">
+              ❤️ {study.likes}
+            </span>
+          )} */}
+          <span className="text-slate-500 text-sm">{study.readTime}</span>
+        </div>
+      </div>
+      <p className="text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
+      <div className="flex justify-between items-center">
+        <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
+        <span className="text-primary text-sm font-medium flex items-center">
+          Start Reading
+          <ArrowRight className="h-3.5 w-3.5 ml-1" />
+        </span>
+      </div>
+    </div>
+  </Link>
+))}
+</motion.div>
+
           ) : (
             <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-100">
               <Heart className="h-10 w-10 text-slate-300 mx-auto mb-3" />
@@ -349,19 +380,52 @@ export default function ProfilePage() {
           </div>
 
           {profileData?.recentStudiesData && profileData.recentStudiesData.length > 0 ? (
-            <div className="space-y-4">
-              {profileData.recentStudiesData.map((study: any) => (
-                <Link key={study.id} href={`/studies/${study.id}`} className="block">
-                  <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
-                    <h3 className="font-bold text-xl mb-2">{study.title}</h3>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
-                      <span className="text-slate-500 text-sm">{study.lastReadTime ? formatDate(study.lastReadTime) : "Recently"}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+
+<motion.div
+initial={{ opacity: 0 }}
+animate={{ opacity: 1 }}
+transition={{ duration: 0.3 }}
+className="space-y-4"
+>
+{profileData.recentStudiesData.map((study: any) => (
+  <Link key={study.id} href={`/studies/${study.id}`} className="block">
+    <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="font-bold text-xl">{study.title}</h3>
+        <div className="flex items-center gap-2">
+          {/* {study.isPublic !== undefined && (
+            <span className="text-xs bg-slate-100 py-1 px-2 rounded-full">
+              {study.isPublic ? "Public" : "Private"}
+            </span>
+          )}
+          {study.likes && study.likes > 0 && (
+            <span className="text-xs bg-slate-100 py-1 px-2 rounded-full flex items-center">
+              ❤️ {study.likes}
+            </span>
+          )} */}
+          <span className="text-slate-500 text-sm">{study.readTime}</span>
+        </div>
+      </div>
+      <p className="text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
+      <div className="flex justify-between items-center">
+        <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
+
+        <div className="flex justify-between items-center">
+                  
+                      <span className="text-slate-500 text-sm">{study.userLastReadTime ? formatDate(study.userLastReadTime) : "Recently"}</span>
+
+                      {/* <span className="text-primary text-sm font-medium flex items-center">
+          Continue reading
+          <ArrowRight className="h-3.5 w-3.5 ml-1" />
+        </span> */}
+                </div>
+       
+      </div>
+    </div>
+  </Link>
+))}
+</motion.div>
+           
           ) : (
             <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-100">
               <Clock className="h-10 w-10 text-slate-300 mx-auto mb-3" />

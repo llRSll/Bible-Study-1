@@ -1,33 +1,39 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sparkles, ArrowRight, Lightbulb, ChevronLeft } from "lucide-react"
-import { generateBibleStudy, Insight, BibleStudy } from "@/lib/claude-ai"
 import { Skeleton } from "@/components/ui/skeleton"
-import { motion, AnimatePresence } from "framer-motion"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
-import Link from "next/link"
 import { VerseDisplay } from "@/components/verse-display"
+import { createStudy } from "@/lib/actions/study"
+import { BibleStudy, generateBibleStudy, Insight } from "@/lib/claude-ai"
+import { AnimatePresence, motion } from "framer-motion"
+import { ArrowRight, CheckCircle, ChevronLeft, Lightbulb, Loader2, Sparkles } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import type React from "react"
+import { useState } from "react"
 
 export default function NewStudyPage() {
   const [topic, setTopic] = useState("")
   const [loading, setLoading] = useState(false)
   const [study, setStudy] = useState<BibleStudy | null>(null)
   const [activeTab, setActiveTab] = useState("topic")
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!topic.trim() || loading) return
 
     setLoading(true)
+    setSaved(false) // Reset saved state when generating a new study
 
     try {
       console.log("Generating study on:", topic)
@@ -35,6 +41,7 @@ export default function NewStudyPage() {
       // Call the Claude-powered function to generate a study
       const generatedStudy = await generateBibleStudy(topic, activeTab)
       console.log("Study generated successfully")
+      console.log("---generatedStudy---", generatedStudy)
 
       console.log("Generated study:", generatedStudy);
 
@@ -55,6 +62,67 @@ export default function NewStudyPage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSaveStudy = async () => {
+    // Don't allow saving if the study is null, already saving/saved, or if there was an error generating it
+    if (!study || saving || saved || study.cannotGenerate || study.isApiError) return
+    
+    setSaving(true)
+    
+    try {
+      // Create a FormData object to send to the server
+      const formData = new FormData()
+      formData.append("title", study.title)
+      formData.append("verses", JSON.stringify(study.verses))
+      formData.append("context", study.context || "")
+      formData.append("insights", JSON.stringify(study.insights))
+      formData.append("application", study.application || "")
+      formData.append("category", study.category || "Spiritual Growth")
+      formData.append("readTime", study.readTime || `${Math.ceil(study.verses.length * 2)} min`)
+      formData.append("relatedQuestions", JSON.stringify(study.relatedQuestions || []))
+      formData.append('relatedTopics', JSON.stringify(study.relatedTopics || []))
+      
+      // Calculate related topics from the study
+      const topics = [
+        study.category || "Spiritual Growth",
+        ...study.title.split(" ").filter(word => word.length > 4),
+        // Extract topics from verses references (e.g., "John", "Romans")
+        ...study.verses.map(verse => verse.split(" ")[0]).filter(book => book.length > 3)
+      ]
+      // Remove duplicates and limit to 5 topics
+      const uniqueTopics = [...new Set(topics)].slice(0, 5)
+      formData.append("relatedTopics", JSON.stringify(uniqueTopics))
+      
+      // Call the server action to save the study
+      const result = await createStudy(formData)
+      
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to save study")
+      }
+      
+      toast({
+        title: "Study saved successfully",
+        description: "Your study has been saved to your collection",
+      })
+      
+      setSaved(true)
+      
+      // Redirect to the study detail page after a short delay
+      setTimeout(() => {
+        router.push(`/studies/${result.data.id}`)
+      }, 1500)
+      
+    } catch (error) {
+      console.error("Failed to save study:", error)
+      toast({
+        title: "Failed to save study",
+        description: error instanceof Error ? error.message : "Please try again later",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -246,22 +314,47 @@ export default function NewStudyPage() {
 
               <h2 className="section-title">Reflection Questions</h2>
               <div className="question-cards">
-                {[
-                  "How does this study apply to your life right now?",
-                  "What verse stood out to you the most and why?",
-                  "What is one action you can take based on what you've learned?",
-                  "How might this change your understanding of God's character?",
-                ].map((question, index) => (
+                {study.relatedQuestions?.map((question, index) => (
                   <div key={index} className="question-card">
                     <div className="question-number">{index + 1}</div>
                     <p className="question-text">{question}</p>
                   </div>
-                ))}
+                )) || (
+                  [
+                    "How does this study apply to your life right now?",
+                    "What verse stood out to you the most and why?",
+                    "What is one action you can take based on what you've learned?",
+                    "How might this change your understanding of God's character?",
+                  ].map((question, index) => (
+                    <div key={index} className="question-card">
+                      <div className="question-number">{index + 1}</div>
+                      <p className="question-text">{question}</p>
+                    </div>
+                  ))
+                )}
               </div>
 
               <div className="flex justify-center mt-8 mb-4">
-                <Button className="mr-2">Save Study</Button>
-                <Button variant="outline">Share</Button>
+                <Button 
+                  className="mr-2 min-w-32"
+                  onClick={handleSaveStudy}
+                  disabled={saving || saved || study?.cannotGenerate || study?.isApiError}
+                >
+                  {saved ? (
+                    <span className="flex items-center">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Saved
+                    </span>
+                  ) : saving ? (
+                    <span className="flex items-center">
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </span>
+                  ) : 
+                    "Save Study"
+                  }
+                </Button>
+                {/* <Button variant="outline">Share</Button> */}
               </div>
             </motion.div>
           )}

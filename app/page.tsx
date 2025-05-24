@@ -1,7 +1,8 @@
 "use client";
 
 import BottomNavigation from "@/components/bottom-navigation";
-import { ArrowRight, Bookmark, BookOpen, Clock, Search, TrendingUp } from "lucide-react";
+import { FeaturedStudies } from "@/components/featured-studies";
+import { BookOpen, Search, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 
@@ -14,30 +15,6 @@ export default function HomePage() {
     text: "Your word is a lamp to my feet and a light to my path.",
     translation: "ESV",
   }
-
-  // Featured studies
-  const featuredStudies = [
-    {
-      id: "forgiveness",
-      title: "Forgiveness",
-      description: "Understanding God's forgiveness and how to forgive others",
-      readTime: "10 min",
-    },
-    {
-      id: "beatitudes",
-      title: "The Beatitudes",
-      description: "Jesus' teachings on true blessedness",
-      readTime: "15 min",
-    },
-    {
-      id: "faith",
-      title: "Faith",
-      description: "Understanding what it means to live by faith",
-      readTime: "12 min",
-    },
-  ]
-
-  // // If loading, show a simple loading indicator
 
   // If authenticated, show the main app content
   return (
@@ -94,33 +71,7 @@ export default function HomePage() {
 
         {/* Featured Studies */}
         <section className="mb-10">
-          <div className="flex justify-between items-center mb-5">
-            <h2 className="text-2xl font-bold">Featured</h2>
-            <Link href="/studies" className="text-primary flex items-center text-sm font-medium">
-              View all <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
-          </div>
-
-          <div className="space-y-4">
-            {featuredStudies.map((study) => (
-              <Link key={study.id} href={`/studies/${study.id}`} className="block">
-                <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-xl">{study.title}</h3>
-                    <span className="text-slate-500 text-sm flex items-center">
-                      <Clock className="h-3.5 w-3.5 mr-1" />
-                      {study.readTime}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 mb-3">{study.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-primary text-sm font-medium">Start reading</span>
-                    <Bookmark className="h-4 w-4 text-slate-400" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <FeaturedStudies />
         </section>
 
         {/* Topics Section */}
