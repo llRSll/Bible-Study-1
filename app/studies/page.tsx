@@ -1,8 +1,9 @@
 "use client"
 
+import { FeaturedStudies } from "@/components/featured-studies"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getStudies, getStudiesByCategory, type Study } from "@/lib/actions/study"
+import { getStudiesByCategory, getUserStudies, type Study } from "@/lib/actions/study"
 import { motion } from "framer-motion"
 import { ArrowRight, BookOpen, Plus, Search, TrendingUp } from "lucide-react"
 import Link from "next/link"
@@ -13,50 +14,6 @@ export default function StudiesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeCategory, setActiveCategory] = useState("all")
   const [studies, setStudies] = useState<Study[]>([])
-
-
-  const featuredStudies = [
-    {
-      id: "forgiveness",
-      title: "Forgiveness",
-      description: "Understanding God's forgiveness and how to forgive others",
-      verses: "Matthew 6:14-15, Colossians 3:13",
-      category: "Christian Living",
-      readTime: "10 min",
-    },
-    {
-      id: "beatitudes",
-      title: "The Beatitudes",
-      description: "Jesus' teachings on true blessedness",
-      verses: "Matthew 5:1-12",
-      category: "Teachings of Jesus",
-      readTime: "15 min",
-    },
-    {
-      id: "faith",
-      title: "Faith",
-      description: "Understanding what it means to live by faith",
-      verses: "Hebrews 11:1-6, Romans 10:17",
-      category: "Spiritual Growth",
-      readTime: "12 min",
-    },
-    {
-      id: "prayer",
-      title: "Prayer",
-      description: "Learning how to pray effectively",
-      verses: "Matthew 6:5-15, Philippians 4:6-7",
-      category: "Spiritual Disciplines",
-      readTime: "8 min",
-    },
-    {
-      id: "holy-spirit",
-      title: "The Holy Spirit",
-      description: "Understanding the person and work of the Holy Spirit",
-      verses: "John 14:15-26, Acts 2:1-13",
-      category: "Theology",
-      readTime: "14 min",
-    },
-  ]
 
   const categories = [
     "All",
@@ -76,12 +33,9 @@ export default function StudiesPage() {
         let result;
         
         if (activeCategory === "all") {
-          result = await getStudies();
-          console.log("result form getStudies", result);
+          result = await getUserStudies();
         } else {
-          console.log("activeCategory", activeCategory);
           result = await getStudiesByCategory(activeCategory);
-          console.log(result);
         }
         
         if (result.error) {
@@ -157,6 +111,7 @@ export default function StudiesPage() {
           </div>
         </section>
 
+
         {/* Studies List */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-5">
@@ -191,7 +146,19 @@ export default function StudiesPage() {
                   <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-bold text-xl">{study.title}</h3>
-                      <span className="text-slate-500 text-sm">{study.readTime}</span>
+                      <div className="flex items-center gap-2">
+                        {/* {study.isPublic !== undefined && (
+                          <span className="text-xs bg-slate-100 py-1 px-2 rounded-full">
+                            {study.isPublic ? "Public" : "Private"}
+                          </span>
+                        )}
+                        {study.likes && study.likes > 0 && (
+                          <span className="text-xs bg-slate-100 py-1 px-2 rounded-full flex items-center">
+                            ❤️ {study.likes}
+                          </span>
+                        )} */}
+                        <span className="text-slate-500 text-sm">{study.readTime}</span>
+                      </div>
                     </div>
                     <p className="text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
                     <div className="flex justify-between items-center">

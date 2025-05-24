@@ -413,7 +413,8 @@ export interface BibleStudy {
   relatedQuestions?: string[]
   isApiError?: boolean
   cannotGenerate?: boolean
-  reason?: string
+  reason?: string,
+  relatedTopics?: string[]
 }
 
 // Manually construct a study from the text when JSON parsing fails
@@ -540,7 +541,8 @@ function constructManualStudy(text: string, topic: string): BibleStudy {
     relatedQuestions,
     isApiError: true,
     cannotGenerate: false,
-    reason: "The response had formatting issues, but we extracted the key information."
+    reason: "The response had formatting issues, but we extracted the key information.",
+    relatedTopics: []
   }
 }
 

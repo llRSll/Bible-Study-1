@@ -3,13 +3,18 @@
 import { createClient } from "@/utils/supabase/server";
 import { Study } from "./study";
 
+export type RecentStudy = {
+  studyId: string;
+  lastReadTime: string;
+};
+
 export type Profile = {
   id: string;
   full_name: string | null;
   email: string | null;
   profile_picture: string | null;
   saved_studies: string[]; // Array of IDs
-  recent_studies: string[]; // Array of IDs
+  recent_studies: RecentStudy[]; // JSONB array of objects with studyId and lastReadTime
   created_at: string;
   updated_at: string;
   // Optional expanded objects
@@ -58,31 +63,63 @@ export async function getUserProfile() {
 
   // Get recent studies data if there are any recent studies
   let recentStudiesData: Study[] = [];
-  if (profile.recent_studies && profile.recent_studies.length > 0) {
+
+  // Parse recent_studies as array (handling JSONB)
+  const recentStudiesList: RecentStudy[] = Array.isArray(profile.recent_studies)
+    ? profile.recent_studies
+    : [];
+
+  console.log("recentStudiesList", recentStudiesList)
+
+  if (recentStudiesList.length > 0) {
+    // Extract the study IDs from the recent studies array
+    const recentStudyIds = recentStudiesList.map((study) => study.studyId);
+
+    console.log("recentStudyIds", recentStudyIds)
+
     const { data: recentStudies, error: recentError } = await supabase
       .from("studies")
       .select("*")
-      .in("id", profile.recent_studies);
+      .in("id", recentStudyIds);
+
+    console.log("recentStudies", recentStudies)
 
     if (!recentError && recentStudies) {
       // Sort the recent studies to match the order in the profile.recent_studies array
-      // Make sure to filter out any undefined values (in case a study was deleted)
-      recentStudiesData = profile.recent_studies
-        .map((id: string) => recentStudies.find((study) => study.id === id))
+      // and enrich them with the user-specific lastReadTime
+      recentStudiesData = recentStudiesList
+        .map((recentItem) => {
+          const study = recentStudies.find((s) => s.id === recentItem.studyId);
+          if (study) {
+            return {
+              ...study,
+              userLastReadTime: recentItem.lastReadTime,
+            };
+          }
+          return null;
+        })
         .filter(
-          (study: Study | undefined | null): study is Study =>
-            study !== undefined && study !== null
+          (study): study is Study & { userLastReadTime: string } =>
+            study !== null
         );
     }
+
+    console.log("recentStudiesData", recentStudiesData)
   }
 
+  // console.log("savedStudiesData", savedStudiesData)
+  // console.log("recentStudiesData", recentStudiesData)
+  console.log("profile.recent_studies", profile.recent_studies)
   // Combine everything into a single response
   return {
     data: {
       ...profile,
       savedStudiesData,
       recentStudiesData,
-    } as Profile & { savedStudiesData: Study[]; recentStudiesData: Study[] },
+    } as Profile & {
+      savedStudiesData: Study[];
+      recentStudiesData: (Study & { userLastReadTime: string })[];
+    },
   };
 }
 
@@ -295,15 +332,27 @@ export async function addToRecentStudies(studyId: string) {
     return { error: profileError };
   }
 
+  // Create the new recent study entry
+  const newRecentStudy: RecentStudy = {
+    studyId,
+    lastReadTime: new Date().toISOString(),
+  };
+
+  // Parse recent studies as an array (Supabase returns JSONB as a string)
+  let recentStudies: RecentStudy[] = Array.isArray(profile.recent_studies)
+    ? profile.recent_studies
+    : [];
+
   // Remove the study if it's already in the list (to avoid duplicates)
-  let recentStudies = profile.recent_studies || [];
-  recentStudies = recentStudies.filter((id: string) => id !== studyId);
+  recentStudies = recentStudies.filter((study) => study.studyId !== studyId);
 
   // Add study to the beginning of recent_studies array (most recent first)
   // and limit to 10 studies
   const { data, error } = await supabase
     .from("profiles")
-    .update({ recent_studies: [studyId, ...recentStudies].slice(0, 10) })
+    .update({
+      recent_studies: [newRecentStudy, ...recentStudies].slice(0, 10),
+    })
     .eq("id", user.id)
     .select()
     .single();
@@ -395,8 +444,7 @@ export async function uploadProfilePicture(formData: FormData) {
   }
 }
 
-// get two most recent read studies from the user's recent_studies list
-
+// Get recent studies with their last read times
 export async function getRecentStudies() {
   const supabase = await createClient();
 
@@ -420,18 +468,48 @@ export async function getRecentStudies() {
     return { error: recentError };
   }
 
-  // Based on the recent studeis ids and lastReadTime, get the two most recent studies
+  // Parse recent studies as an array (Supabase returns JSONB as a string)
+  const recentStudies: RecentStudy[] = Array.isArray(profile.recent_studies)
+    ? profile.recent_studies
+    : [];
 
+  if (recentStudies.length === 0) {
+    return { data: [] };
+  }
+
+  // Extract the study IDs
+  const studyIds = recentStudies.map((study) => study.studyId);
+
+  // Fetch the actual study data
   const { data: studies, error: studiesError } = await supabase
     .from("studies")
     .select("*")
-    .in("id", profile.recent_studies)
-    .order("lastReadTime", { ascending: false })
-    .limit(3);
+    .in("id", studyIds)
+    .limit(10);
 
   if (studiesError) {
     return { error: studiesError };
   }
 
-  return { data: studies };
+  // Merge the study data with the last read times
+  const enrichedStudies = studies.map((study) => {
+    const recentStudy = recentStudies.find((rs) => rs.studyId === study.id);
+    return {
+      ...study,
+      userLastReadTime: recentStudy ? recentStudy.lastReadTime : null,
+    };
+  });
+
+  // Sort by most recently read
+  enrichedStudies.sort((a, b) => {
+    const timeA = a.userLastReadTime
+      ? new Date(a.userLastReadTime).getTime()
+      : 0;
+    const timeB = b.userLastReadTime
+      ? new Date(b.userLastReadTime).getTime()
+      : 0;
+    return timeB - timeA; // Descending order
+  });
+
+  return { data: enrichedStudies };
 }
