@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { signup } from "../actions";
+import { signup } from "@/lib/actions/auth";
 
 
 export default function Signup() {

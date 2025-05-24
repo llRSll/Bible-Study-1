@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react"
 import { Send, Info, MessageSquare, AlertTriangle } from "lucide-react"
 import { askBibleQuestion, type ScriptureReference } from "@/lib/claude-ai"
 import { Button } from "@/components/ui/button"
+import { useSearchParams } from "next/navigation"
 
 interface ChatMessage {
   type: "question" | "answer"
@@ -18,11 +19,13 @@ interface ChatMessage {
 }
 
 export default function AskPage() {
+  const searchParams = useSearchParams()
   const [question, setQuestion] = useState("")
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const exampleQuestions = [
     "What does the Bible say about forgiveness?",
@@ -34,6 +37,20 @@ export default function AskPage() {
   useEffect(() => {
     scrollToBottom()
   }, [chatHistory, isTyping])
+
+  // Handle query parameter from URL
+  useEffect(() => {
+    const queryParam = searchParams.get("q")
+    if (queryParam && chatHistory.length === 0) {
+      setQuestion(queryParam)
+      // Scroll to input field
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      // Submit the question after a short delay to allow state to update
+      setTimeout(() => {
+        handleSubmit({ preventDefault: () => {} } as React.FormEvent)
+      }, 100)
+    }
+  }, [searchParams])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -248,6 +265,7 @@ export default function AskPage() {
         <div className="mt-4">
           <form onSubmit={handleSubmit} className="relative">
             <input
+              ref={inputRef}
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}

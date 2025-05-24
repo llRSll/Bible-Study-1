@@ -23,6 +23,7 @@ export type Study = {
   created_at?: string;
   updated_at?: string;
   lastReadTime?: string;
+  relatedTopics?: string[];
 };
 
 export async function createStudy(formData: FormData) {
@@ -231,6 +232,51 @@ export async function updateLastReadTime(studyId: string) {
     .eq("user_id", user.id)
     .select()
     .single();
+
+  if (error) {
+    return { error };
+  }
+
+  return { data };
+}
+
+export async function searchStudies(query: string, isTopic: boolean = false) {
+  const supabase = await createClient();
+
+  // Get the current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: { message: "Not authenticated" } };
+  }
+
+  const normalizedQuery = query.toLowerCase().trim();
+
+  if (isTopic) {
+    // For topic searches, only look in title
+    const { data, error } = await supabase
+      .from("studies")
+      .select("*")
+      .eq("user_id", user.id)
+      .ilike("title", `%${normalizedQuery}%`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return { error };
+    }
+
+    return { data };
+  }
+
+  // For regular searches (from search input), look in both title and verses
+  const { data, error } = await supabase
+    .from("studies")
+    .select("*")
+    .eq("user_id", user.id)
+    .or(`title.ilike.%${normalizedQuery}%,verses.cs.{${normalizedQuery}}`)
+    .order("created_at", { ascending: false });
 
   if (error) {
     return { error };

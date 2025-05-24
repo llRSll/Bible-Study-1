@@ -341,6 +341,17 @@ When creating Bible studies:
     - Spritual Disciplines
 7. Generate approximate readTime based on the number of verses and the complexity of the study.
 8. Generate 3-4 questions asking the user about his/her spirtual life related to the study 
+9. Select 1 or more the most related topics from the following topics and include them in the relatedTopics array:
+    - love
+    - faith
+    - strength
+    - wisdom
+    - prayer
+    - grace
+    - salvation
+    - joy
+    - hope
+    - forgiveness
 
 EXTREMELY IMPORTANT: Your response MUST be ONLY valid JSON with NO preamble, NO explanations, and NO text before or after the JSON. Start your response with "{" and end with "}". Do not include any markdown formatting, control characters, or non-printable characters.
 
@@ -353,6 +364,7 @@ Structure your response in this format:
 - category: The most related category for the study
 - readTime: Approximate read time for the study
 - relatedQuestions: Array of questions asking the user about his/her spirtual life related to the study
+- relatedTopics: Array of 1 or more topics related to the study
 Example format:
 {
 "title": "The Power of Prayer",
@@ -372,7 +384,8 @@ Example format:
 "application": "Set aside time each day to pray...",
 "category": "Spiritual Growth",
 "readTime": "5 minutes",
-"relatedQuestions": ["Is there someone in your life you need to forgive? What is holding you back?", "How can you show forgiveness to someone who has wronged you?", "What are some ways you can practice forgiveness in your daily life?"]
+"relatedQuestions": ["Is there someone in your life you need to forgive? What is holding you back?", "How can you show forgiveness to someone who has wronged you?", "What are some ways you can practice forgiveness in your daily life?"],
+"relatedTopics": ["prayer"]
 }`
 
 // Default fallback study when parsing fails
@@ -394,6 +407,7 @@ const DEFAULT_FALLBACK_STUDY: BibleStudy = {
      "How can you show forgiveness to someone who has wronged you?", 
      "What are some ways you can practice forgiveness in your daily life?"
     ], 
+  relatedTopics: ["wisdom"],
   application:
     "To grow in biblical wisdom, make Scripture reading a daily habit. When facing decisions, look for biblical principles that apply to your situation. Seek counsel from mature Christians who demonstrate wisdom in their own lives. Pray specifically for wisdom, trusting God's promise to provide it. Remember that wisdom is not just knowledge but the application of truth in daily life. Practice what you learn from Scripture, allowing God's wisdom to transform your choices and character.",
   isApiError: true,
@@ -410,7 +424,8 @@ export interface BibleStudy {
   application: string
   category?: string
   readTime?: string
-  relatedQuestions?: string[]
+  relatedQuestions?: string[],
+  relatedTopics?: string[],
   isApiError?: boolean
   cannotGenerate?: boolean
   reason?: string
@@ -529,6 +544,8 @@ function constructManualStudy(text: string, topic: string): BibleStudy {
     }
   }
 
+  let relatedTopics: string[] = ["love", "faith", "strength", "wisdom", "prayer", "grace", "salvation", "joy", "hope", "forgiveness"]
+
   return {
     title,
     verses,
@@ -538,6 +555,7 @@ function constructManualStudy(text: string, topic: string): BibleStudy {
     category,
     readTime,
     relatedQuestions,
+    relatedTopics,
     isApiError: true,
     cannotGenerate: false,
     reason: "The response had formatting issues, but we extracted the key information."

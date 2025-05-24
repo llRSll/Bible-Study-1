@@ -5,12 +5,18 @@ import { useToast } from "@/components/ui/use-toast"
 import { VerseDisplay } from "@/components/verse-display"
 import { addToRecentStudies, getUserProfile, saveStudy, unsaveStudy } from "@/lib/actions/profile"
 import { getStudyById, updateLastReadTime, type Study } from "@/lib/actions/study"
-import { Bookmark, ChevronLeft, ChevronRight, Heart, MessageSquare, Share2 } from "lucide-react"
+import { Bookmark, ChevronLeft, ChevronRight, Copy, Heart, MessageSquare, Share2 } from "lucide-react"
 import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
 import { use, useEffect, useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 export default function StudyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(true)
   const [study, setStudy] = useState<Study | null>(null)
   const [liked, setLiked] = useState(false)
@@ -19,6 +25,7 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
   const [translation, setTranslation] = useState("ESV")
   const { toast } = useToast()
   const [error, setError] = useState<string | null>(null)
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
   // Check if the study is bookmarked
   useEffect(() => {
@@ -130,6 +137,31 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
       });
     } finally {
       setBookmarkLoading(false);
+    }
+  };
+
+  const handleShare = () => {
+    setShareDialogOpen(true);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      const url = `${window.location.origin}${pathname}`;
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Link copied!",
+        description: "The study link has been copied to your clipboard.",
+        duration: 2000,
+      });
+      setShareDialogOpen(false);
+    } catch (error) {
+      console.error('Error sharing:', error);
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the link. Please try again.",
+        variant: "destructive",
+        duration: 2000,
+      });
     }
   };
 
@@ -267,6 +299,25 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
         )}
       </div>
 
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Study</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center space-x-2">
+            <Input
+              readOnly
+              value={typeof window !== 'undefined' ? `${window.location.origin}${pathname}` : ''}
+              className="flex-1"
+            />
+            <Button onClick={handleCopyLink} className="flex items-center gap-2">
+              <Copy className="h-4 w-4" />
+              Copy
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="study-actions">
         <div className="action-buttons">
           <button
@@ -284,10 +335,18 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
           >
             <Heart className="action-icon" fill={liked ? "currentColor" : "none"} />
           </button>
-          <button className="action-button" aria-label="Share">
+          <button 
+            className="action-button" 
+            aria-label="Share"
+            onClick={handleShare}
+          >
             <Share2 className="action-icon" />
           </button>
-          <button className="action-button" aria-label="Comment">
+          <button 
+            className="action-button" 
+            aria-label="Comment"
+            onClick={() => router.push('/ask')}
+          >
             <MessageSquare className="action-icon" />
           </button>
         </div>

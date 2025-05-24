@@ -134,7 +134,7 @@ export default function HomePage() {
             {["Prayer", "Faith", "Hope", "Love", "Wisdom", "Grace", "Salvation"].map((topic) => (
               <Link
                 key={topic}
-                href={`/search?q=${topic}`}
+                href={`/search?topic=${topic}`}
                 className="px-5 py-3 bg-slate-100 rounded-full flex items-center whitespace-nowrap hover:bg-slate-200 transition-colors"
               >
                 <span className="font-medium">{topic}</span>

@@ -36,6 +36,8 @@ export default function NewStudyPage() {
       const generatedStudy = await generateBibleStudy(topic, activeTab)
       console.log("Study generated successfully")
 
+      console.log("Generated study:", generatedStudy);
+
       setStudy(generatedStudy)
 
       toast({
