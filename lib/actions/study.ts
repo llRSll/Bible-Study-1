@@ -48,8 +48,8 @@ export async function createStudy(formData: FormData) {
     context: formData.get("context") as string,
     insights: JSON.parse(formData.get("insights") as string),
     application: formData.get("application") as string,
-    category: formData.get("category") as string,
-    readTime: formData.get("readTime") as string,
+    category: (formData.get("category") as string).toLowerCase(),
+    readTime: `${(formData.get("readTime") as string).split(" ")[0]} min`,
     relatedQuestions: JSON.parse(formData.get("relatedQuestions") as string),
     relatedTopics: formData.get("relatedTopics")
       ? JSON.parse(formData.get("relatedTopics") as string)

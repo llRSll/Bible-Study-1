@@ -85,7 +85,7 @@ export function BibleSearch() {
 
       // Try to at least show study results if Bible search failed
       try {
-        const studyResults = searchStudies(query)
+        const studyResults = await searchStudies(query)
         if (studyResults.length > 0) {
           setStudyResults(studyResults)
           setActiveTab("studies")
@@ -213,7 +213,7 @@ export function BibleSearch() {
 
       <div className="mt-6 space-y-4">
         {error && (
-          <Alert variant="warning">
+          <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Search Issue</AlertTitle>
             <AlertDescription>{error}</AlertDescription>

@@ -214,24 +214,11 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen">
-        <div className="study-header">
-          <Link href="/studies" className="back-button">
-            <ChevronLeft className="h-6 w-6" />
-          </Link>
-          <h1 className="header-title">Loading Study</h1>
+        <div className="flex flex-col min-h-screen bg-white items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-slate-500">loading study...</p>
         </div>
-        <div className="flex flex-col items-center justify-center flex-1 p-6">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Loading study...</h2>
-            {/* <p className="text-slate-500 max-w-md mx-auto">
-              Please wait while we load the Bible study content for you
-            </p> */}
-          </div>
-        </div>
-      </div>
-    )
+      )
   }
 
   if (error || !study) {
@@ -271,8 +258,7 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       <div className="study-content">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="study-title">{study.title}</h1>
+        {/* <div className="flex justify-between items-center mb-4">
           {isCurrentUserOwner && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
@@ -291,7 +277,7 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
               )}
             </div>
           )}
-        </div>
+        </div> */}
 
         <div className="flex justify-end mb-4">
           <Select value={translation} onValueChange={handleTranslationChange}>
@@ -358,19 +344,6 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
             </div>
           </>
         )}
-        
-        {study.relatedTopics && study.relatedTopics.length > 0 && (
-          <>
-            <h2 className="section-title">Topics</h2>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {study.relatedTopics.map((topic) => (
-                <Badge key={topic} variant="secondary">
-                  {topic}
-                </Badge>
-              ))}
-            </div>
-          </>
-        )}
       </div>
 
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
@@ -422,14 +395,6 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
             onClick={() => router.push('/ask')}
           >
             <MessageSquare className="action-icon" />
-          </button>
-        </div>
-        <div className="pagination-buttons">
-          <button className="pagination-button" aria-label="Previous page">
-            <ChevronLeft className="pagination-icon" />
-          </button>
-          <button className="pagination-button" aria-label="Next page">
-            <ChevronRight className="pagination-icon" />
           </button>
         </div>
       </div>

@@ -2,19 +2,79 @@
 
 import BottomNavigation from "@/components/bottom-navigation";
 import { FeaturedStudies } from "@/components/featured-studies";
-import { BookOpen, Search, TrendingUp } from "lucide-react";
+import { getDailyVerse, VerseResponse } from "@/lib/bible-api";
+import { useUserPreferences } from "@/contexts/user-preferences";
+import { BookOpen, Search, TrendingUp, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
+// Helper to check if we need a new verse for the day
+function needsNewVerse(timestamp: number): boolean {
+  const now = new Date();
+  const lastFetch = new Date(timestamp);
+  return (
+    lastFetch.getDate() !== now.getDate() ||
+    lastFetch.getMonth() !== now.getMonth() ||
+    lastFetch.getFullYear() !== now.getFullYear()
+  );
+}
 
 export default function HomePage() {
+  const { preferences } = useUserPreferences();
+  const [dailyVerse, setDailyVerse] = useState<VerseResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    async function loadDailyVerse() {
+      try {
+        // Check localStorage first
+        const cached = localStorage.getItem('dailyVerse');
+        if (cached) {
+          const { verse, timestamp, translation } = JSON.parse(cached);
+          
+          // If we have a cached verse from today and the translation matches, use it
+          if (!needsNewVerse(timestamp) && translation === preferences.preferredTranslation) {
+            setDailyVerse(verse);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // If we need a new verse, fetch it
+        const verse = await getDailyVerse(preferences.preferredTranslation);
+        
+        // Cache the new verse
+        localStorage.setItem('dailyVerse', JSON.stringify({
+          verse,
+          timestamp: Date.now(),
+          translation: preferences.preferredTranslation
+        }));
+        
+        setDailyVerse(verse);
+      } catch (error) {
+        console.error("Error loading daily verse:", error);
+        // Set a fallback verse
+        const fallbackVerse = {
+          reference: "Psalm 119:105",
+          text: "Your word is a lamp to my feet and a light to my path.",
+          translation: preferences.preferredTranslation || "ESV",
+        };
+        
+        // Cache the fallback verse too
+        localStorage.setItem('dailyVerse', JSON.stringify({
+          verse: fallbackVerse,
+          timestamp: Date.now(),
+          translation: preferences.preferredTranslation
+        }));
+        
+        setDailyVerse(fallbackVerse);
+      } finally {
+        setLoading(false);
+      }
+    }
   
-  // Daily verse
-  const dailyVerse = {
-    reference: "Psalm 119:105",
-    text: "Your word is a lamp to my feet and a light to my path.",
-    translation: "ESV",
-  }
+    loadDailyVerse();
+  }, [preferences.preferredTranslation]);
 
   // If authenticated, show the main app content
   return (
@@ -35,11 +95,19 @@ export default function HomePage() {
 
             <div className="relative z-10">
               <h2 className="text-2xl font-bold mb-2">Daily Verse</h2>
-              <p className="text-xl font-medium mb-3 leading-relaxed">"{dailyVerse.text}"</p>
-              <div className="flex justify-between items-center">
-                <span className="text-white/80">{dailyVerse.reference}</span>
-                <span className="text-white/60 text-sm">{dailyVerse.translation}</span>
-              </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-white/80" />
+                </div>
+              ) : dailyVerse ? (
+                <>
+                  <p className="text-xl font-medium mb-3 leading-relaxed">"{dailyVerse.text}"</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/80">{dailyVerse.reference}</span>
+                    <span className="text-white/60 text-sm">{dailyVerse.translation}</span>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         </section>
@@ -98,5 +166,5 @@ export default function HomePage() {
       {/* Bottom Navigation */}
       <BottomNavigation />
     </div>
-  )
+  );
 }

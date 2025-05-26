@@ -150,67 +150,134 @@ export async function updateProfile(formData: FormData) {
       return { error: profileError || { message: "Profile not found" } };
     }
 
-    // Check if we have a new profile picture
-    const file = formData.get("profile_picture") as File;
-    let profilePictureUrl = profile.profile_picture;
+    // Prepare update data
+    const updateData: {
+      full_name?: string | null;
+      profile_picture?: string | null;
+      updated_at: string;
+    } = {
+      updated_at: new Date().toISOString(),
+    };
 
-    if (file && file.size > 0) {
-      // Upload the file to Supabase Storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `profile.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      // Check if file exists and delete it first
-      const { data: existingFiles } = await supabase.storage
-        .from("profile-pictures")
-        .list(user.id);
-
-      if (existingFiles && existingFiles.length > 0) {
-        await supabase.storage
-          .from("profile-pictures")
-          .remove(existingFiles.map((file) => `${user.id}/${file.name}`));
-      }
-
-      // Upload the new file
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("profile-pictures")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        console.error("Upload error during profile update:", uploadError);
-        return { error: uploadError };
-      }
-
-      // Get the public URL of the uploaded file
-      const { data: urlData } = supabase.storage
-        .from("profile-pictures")
-        .getPublicUrl(filePath);
-
-      // Ensure the URL is valid
-      profilePictureUrl = urlData.publicUrl;
-      console.log("Generated public URL:", profilePictureUrl);
+    // Handle name update
+    const newName = formData.get("full_name");
+    if (newName !== null) {
+      updateData.full_name = newName as string;
     }
 
-    // Update the profile with name and profile picture
-    const { data, error } = await supabase
+    // Handle profile picture update
+    const file = formData.get("profile_picture") as File;
+    if (file && file instanceof File && file.size > 0) {
+      try {
+        // Upload the file to Supabase Storage
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}_profile.${fileExt}`; // Add timestamp to prevent caching
+        const filePath = `${user.id}/${fileName}`;
+
+        // Delete existing profile picture if any
+        if (profile.profile_picture) {
+          const oldFilePath = profile.profile_picture.split("/").pop();
+          if (oldFilePath) {
+            await supabase.storage
+              .from("profile-pictures")
+              .remove([`${user.id}/${oldFilePath}`]);
+          }
+        }
+
+        // Upload the new file
+        const { error: uploadError } = await supabase.storage
+          .from("profile-pictures")
+          .upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        // Get the public URL
+        const { data: urlData } = supabase.storage
+          .from("profile-pictures")
+          .getPublicUrl(filePath);
+
+        if (!urlData?.publicUrl) {
+          throw new Error("Failed to get public URL for uploaded file");
+        }
+
+        updateData.profile_picture = urlData.publicUrl;
+      } catch (uploadErr) {
+        console.error("Error during file upload:", uploadErr);
+        return { error: { message: "Failed to upload profile picture" } };
+      }
+    }
+
+    // Update the profile
+    const { data: updatedProfile, error: updateError } = await supabase
       .from("profiles")
-      .update({
-        full_name: formData.get("full_name"),
-        profile_picture: profilePictureUrl,
-      })
+      .update(updateData)
       .eq("id", user.id)
       .select()
       .single();
 
-    if (error) {
-      console.error("Profile update error:", error);
-      return { error };
+    if (updateError) {
+      throw updateError;
     }
 
-    return { data };
+    // Get saved studies data
+    let savedStudiesData: Study[] = [];
+    if (updatedProfile.saved_studies?.length > 0) {
+      const { data: savedStudies } = await supabase
+        .from("studies")
+        .select("*")
+        .in("id", updatedProfile.saved_studies);
+
+      if (savedStudies) {
+        savedStudiesData = savedStudies;
+      }
+    }
+
+    // Get recent studies data
+    let recentStudiesData: Study[] = [];
+    const recentStudiesList: RecentStudy[] = Array.isArray(updatedProfile.recent_studies)
+      ? updatedProfile.recent_studies
+      : [];
+
+    if (recentStudiesList.length > 0) {
+      const recentStudyIds = recentStudiesList.map((study) => study.studyId);
+      const { data: recentStudies } = await supabase
+        .from("studies")
+        .select("*")
+        .in("id", recentStudyIds);
+
+      if (recentStudies) {
+        recentStudiesData = recentStudiesList
+          .map((recentItem) => {
+            const study = recentStudies.find((s) => s.id === recentItem.studyId);
+            if (study) {
+              return {
+                ...study,
+                userLastReadTime: recentItem.lastReadTime,
+              };
+            }
+            return null;
+          })
+          .filter((study): study is Study & { userLastReadTime: string } => study !== null);
+      }
+    }
+
+    // Return complete profile data
+    return {
+      data: {
+        ...updatedProfile,
+        savedStudiesData,
+        recentStudiesData,
+      } as Profile & {
+        savedStudiesData: Study[];
+        recentStudiesData: (Study & { userLastReadTime: string })[];
+      },
+    };
+
   } catch (err) {
     console.error("Unexpected error during profile update:", err);
     return { error: { message: "An unexpected error occurred" } };

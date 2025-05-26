@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
@@ -41,18 +40,27 @@ export default function NewStudyPage() {
       // Call the Claude-powered function to generate a study
       const generatedStudy = await generateBibleStudy(topic, activeTab)
       console.log("Study generated successfully")
-      console.log("---generatedStudy---", generatedStudy)
-
-      console.log("Generated study:", generatedStudy);
 
       setStudy(generatedStudy)
 
-      toast({
-        title: generatedStudy.cannotGenerate ? "Limited Study Generated" : "Study generated successfully",
-        description: generatedStudy.cannotGenerate
-          ? "Only a placeholder study could be created due to limitations"
-          : "Your Bible study is ready to explore",
-      })
+      if (generatedStudy.cannotGenerate) {
+        toast({
+          title: "Limited Study Generated",
+          description: "Only a placeholder study could be created due to limitations",
+        })
+        setLoading(false)
+      } else {
+        toast({
+          title: "Study generated successfully",
+          description: "Redirecting to study preview...",
+        })
+        
+        // Store the generated study in sessionStorage to pass to the preview page
+        sessionStorage.setItem('previewStudy', JSON.stringify(generatedStudy))
+        
+        // Navigate to the study preview page
+        router.push(`/studies/preview`)
+      }
     } catch (error) {
       console.error("Failed to generate study:", error)
       toast({
@@ -60,14 +68,13 @@ export default function NewStudyPage() {
         description: "Please try again later",
         variant: "destructive",
       })
-    } finally {
       setLoading(false)
     }
   }
 
   const handleSaveStudy = async () => {
     // Don't allow saving if the study is null, already saving/saved, or if there was an error generating it
-    if (!study || saving || saved || study.cannotGenerate || study.isApiError) return
+    if (!study || saving || saved || study.cannotGenerate) return
     
     setSaving(true)
     
@@ -111,7 +118,7 @@ export default function NewStudyPage() {
       
       // Redirect to the study detail page after a short delay
       setTimeout(() => {
-        router.push(`/studies/${result.data.id}`)
+        router.push(`/studies`)
       }, 1500)
       
     } catch (error) {
@@ -244,35 +251,24 @@ export default function NewStudyPage() {
               </Tabs>
 
               <Button type="submit" className="w-full mt-6 group" disabled={!topic.trim() || loading}>
-                {loading ? "Generating..." : "Generate Bible Study"}
-                {!loading && <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />}
+                {loading ? (
+                  <span className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </span>
+                ) : (
+                  <>
+                    Generate Bible Study
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <AnimatePresence>
-          {loading && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <Card>
-                <CardHeader>
-                  <Skeleton className="h-8 w-3/4" />
-                  <Skeleton className="h-4 w-1/2 mt-2" />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {study && !loading && (
+          {study && !loading && study.cannotGenerate && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -281,80 +277,9 @@ export default function NewStudyPage() {
             >
               <div className="mb-4">
                 <h2 className="text-xl font-semibold font-serif text-center">{study.title}</h2>
-              </div>
-
-              <h2 className="section-title">Scripture</h2>
-              <div className="scripture-cards">
-                {study.verses.map((verse: string, index: number) => (
-                  <VerseDisplay key={index} reference={verse} translation="ESV" />
-                ))}
-              </div>
-
-              <h2 className="section-title">Study Insights</h2>
-              <div className="insight-cards">
-                <div className="insight-card">
-                  <h3 className="insight-title">Context</h3>
-                  <p className="insight-content">{study.context}</p>
-                </div>
-
-                {study.insights.map((insight: Insight, index: number) => (
-                  <div key={index} className="insight-card">
-                    <h3 className="insight-title">{insight.title}</h3>
-                    <p className="insight-content">{insight.description}</p>
-                  </div>
-                ))}
-              </div>
-
-              <h2 className="section-title">Application</h2>
-              <div className="insight-cards">
-                <div className="insight-card">
-                  <p className="insight-content">{study.application}</p>
-                </div>
-              </div>
-
-              <h2 className="section-title">Reflection Questions</h2>
-              <div className="question-cards">
-                {study.relatedQuestions?.map((question, index) => (
-                  <div key={index} className="question-card">
-                    <div className="question-number">{index + 1}</div>
-                    <p className="question-text">{question}</p>
-                  </div>
-                )) || (
-                  [
-                    "How does this study apply to your life right now?",
-                    "What verse stood out to you the most and why?",
-                    "What is one action you can take based on what you've learned?",
-                    "How might this change your understanding of God's character?",
-                  ].map((question, index) => (
-                    <div key={index} className="question-card">
-                      <div className="question-number">{index + 1}</div>
-                      <p className="question-text">{question}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="flex justify-center mt-8 mb-4">
-                <Button 
-                  className="mr-2 min-w-32"
-                  onClick={handleSaveStudy}
-                  disabled={saving || saved || study?.cannotGenerate || study?.isApiError}
-                >
-                  {saved ? (
-                    <span className="flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Saved
-                    </span>
-                  ) : saving ? (
-                    <span className="flex items-center">
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </span>
-                  ) : 
-                    "Save Study"
-                  }
-                </Button>
-                {/* <Button variant="outline">Share</Button> */}
+                <p className="text-center text-muted-foreground mt-2">
+                  There was an issue generating your study. You can try again with a different topic.
+                </p>
               </div>
             </motion.div>
           )}

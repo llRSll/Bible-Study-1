@@ -6,12 +6,14 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { login } from "../../../lib/actions/auth";
 import { ValidationError, validateLoginForm } from "../../../lib/utils/validations";
+import { Eye, EyeOff } from "lucide-react";
 
 
 export default function Login() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationError>({});
@@ -116,26 +118,39 @@ export default function Login() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (validationErrors.password) {
-                    setValidationErrors({
-                      ...validationErrors,
-                      password: undefined
-                    });
-                  }
-                }}
-                className={`mt-1 block w-full rounded-md border ${
-                  validationErrors.password ? "border-red-500" : "border-gray-300"
-                } px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
-              />
+              <div className="relative mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (validationErrors.password) {
+                      setValidationErrors({
+                        ...validationErrors,
+                        password: undefined
+                      });
+                    }
+                  }}
+                  className={`block w-full rounded-md border ${
+                    validationErrors.password ? "border-red-500" : "border-gray-300"
+                  } pr-10 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-500" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400 hover:text-gray-500" />
+                  )}
+                </button>
+              </div>
               {validationErrors.password && (
                 <p className="mt-1 text-xs text-red-600">{validationErrors.password}</p>
               )}

@@ -98,7 +98,6 @@ export function LikeButton({
       aria-label={liked ? "Unlike" : "Like"}
     >
       <Heart className="action-icon" fill={liked ? "currentColor" : "none"} />
-      {likeCount > 0 && <span className="text-xs ml-1">{likeCount}</span>}
     </button>
   );
 } 

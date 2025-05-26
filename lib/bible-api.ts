@@ -2,6 +2,7 @@
 
 import { anthropic } from "@ai-sdk/anthropic"
 import { generateText } from "ai"
+import { createClient } from "@/utils/supabase/server"
 
 // Cache for storing fetched verses to avoid duplicate requests
 const verseCache = new Map<string, { text: string; copyright: string }>()
@@ -147,6 +148,120 @@ const commonVerses: Record<string, string> = {
 
 // Flag to track if we've logged the API issue
 let apiIssueLogged = false
+
+// Cache for storing daily verses with stable keys
+const CACHE_VERSION = 'v1';
+
+// Cache for the daily verse with 24-hour expiration
+interface DailyVerseCache {
+  verse: VerseResponse;
+  timestamp: number;
+}
+
+interface DailyVerse {
+  id: string;
+  reference: string;
+  text: string;
+  translation: string;
+  copyright: string;
+  date: string;
+}
+
+// Get daily verse from Supabase or create it if it doesn't exist for today
+export async function getDailyVerse(translation = "ESV"): Promise<VerseResponse> {
+  try {
+    // Create a stable date key for today in ISO format (YYYY-MM-DD)
+    const today = new Date();
+    const dateKey = today.toISOString().split('T')[0];
+    
+    // Initialize Supabase client
+    const supabase = await createClient();
+    
+    // Try to get today's verse from the database
+    const { data: dailyVerse, error } = await supabase
+      .from('daily_verses')
+      .select('*')
+      .eq('date', dateKey)
+      .single();
+    
+    // If we found today's verse in the database, return it
+    if (dailyVerse && !error) {
+      return {
+        reference: dailyVerse.reference,
+        text: dailyVerse.text,
+        translation: dailyVerse.translation,
+        copyright: dailyVerse.copyright,
+      };
+    }
+    
+    // If we don't have today's verse, generate a new one and store it
+    // Generate a random verse from our common verses
+    const availableVerses = Object.keys(commonVerses);
+    const randomIndex = Math.floor(Math.random() * availableVerses.length);
+    const reference = availableVerses[randomIndex];
+    const text = commonVerses[reference];
+    
+    // Create the verse response
+    const verseResponse: VerseResponse = {
+      reference,
+      text,
+      translation,
+      copyright: `Scripture from ${translation}`,
+    };
+    
+    // Store the verse in the database for future requests
+    await storeNewDailyVerse(verseResponse, dateKey);
+    
+    return verseResponse;
+  } catch (error) {
+    console.error("Error getting daily verse:", error);
+    
+    // If there's an error with the database, fall back to the local implementation
+    // Create a stable cache key that changes only once per day
+    const today = new Date();
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+    const year = today.getFullYear();
+    const dailyKey = `${CACHE_VERSION}-${year}-${dayOfYear}-${translation}`;
+    
+    // Use the daily key to select a consistent verse
+    const availableVerses = Object.keys(commonVerses);
+    const hash = Array.from(dailyKey).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const index = hash % availableVerses.length;
+    const reference = availableVerses[index];
+    
+    // Return the verse from our common verses
+    return {
+      reference,
+      text: commonVerses[reference],
+      translation,
+      copyright: `Scripture from ${translation}`,
+    };
+  }
+}
+
+// Store a new daily verse in the database
+async function storeNewDailyVerse(verse: VerseResponse, dateKey: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    
+    // Insert the new daily verse
+    const { error } = await supabase
+      .from('daily_verses')
+      .insert({
+        reference: verse.reference,
+        text: verse.text,
+        translation: verse.translation,
+        copyright: verse.copyright || `Scripture from ${verse.translation}`,
+        date: dateKey,
+      });
+    
+    if (error) {
+      console.error("Error storing daily verse:", error);
+    }
+  } catch (error) {
+    console.error("Error in storeNewDailyVerse:", error);
+  }
+}
 
 /**
  * Fetches a Bible verse from the API.Bible service
