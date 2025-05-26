@@ -8,6 +8,10 @@ export interface UserPreferences {
   fontSize: "small" | "medium" | "large"
   darkMode: boolean
   saveHistory: boolean
+  notifications: {
+    dailyVerse: boolean
+    studyReminders: boolean
+  }
 }
 
 // Define the default preferences
@@ -16,12 +20,17 @@ const defaultPreferences: UserPreferences = {
   fontSize: "medium",
   darkMode: false,
   saveHistory: true,
+  notifications: {
+    dailyVerse: true,
+    studyReminders: true,
+  },
 }
 
 // Define the context type
 interface UserPreferencesContextType {
   preferences: UserPreferences
   updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void
+  toggleNotification: (type: keyof UserPreferences['notifications']) => void
   resetPreferences: () => void
 }
 
@@ -67,13 +76,24 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
     setPreferences((prev) => ({ ...prev, [key]: value }))
   }
 
+  // Function to toggle a notification setting
+  const toggleNotification = (type: keyof UserPreferences['notifications']) => {
+    setPreferences((prev) => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        [type]: !prev.notifications[type],
+      },
+    }))
+  }
+
   // Function to reset all preferences to defaults
   const resetPreferences = () => {
     setPreferences(defaultPreferences)
   }
 
   return (
-    <UserPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences }}>
+    <UserPreferencesContext.Provider value={{ preferences, updatePreference, toggleNotification, resetPreferences }}>
       {children}
     </UserPreferencesContext.Provider>
   )
