@@ -69,13 +69,11 @@ export async function getUserProfile() {
     ? profile.recent_studies
     : [];
 
-  console.log("recentStudiesList", recentStudiesList)
 
   if (recentStudiesList.length > 0) {
     // Extract the study IDs from the recent studies array
     const recentStudyIds = recentStudiesList.map((study) => study.studyId);
 
-    console.log("recentStudyIds", recentStudyIds)
 
     const { data: recentStudies, error: recentError } = await supabase
       .from("studies")
@@ -104,7 +102,6 @@ export async function getUserProfile() {
         );
     }
 
-    console.log("recentStudiesData", recentStudiesData)
   }
 
   // console.log("savedStudiesData", savedStudiesData)

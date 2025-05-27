@@ -208,14 +208,14 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
-      <header className="pt-6 sm:pt-12 pb-4 sm:pb-6 px-4 sm:px-6 flex justify-between items-center">
+      <header className="pt-4 sm:pt-6 pb-3 sm:pb-4 px-4 sm:px-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-1">Profile</h1>
-          <p className="text-sm sm:text-lg text-slate-500">Manage your account</p>
+          <h1 className="text-[3.2vw] sm:text-4xl font-extrabold tracking-tight mb-1">Profile</h1>
+          <p className="text-[2.8vw] sm:text-lg text-slate-500">Manage your account</p>
         </div>
         <Button 
           variant="outline" 
-          className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base text-slate-700"
+          className="flex items-center gap-1 sm:gap-2 text-[2.8vw] sm:text-base text-slate-700 h-8 sm:h-10"
           onClick={handleLogout}
           disabled={loggingOut}
         >
@@ -236,9 +236,9 @@ export default function ProfilePage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 sm:px-6 pb-20 sm:pb-32">
+      <main className="flex-1 px-4 sm:px-6 pb-16 sm:pb-24">
         {/* User Card */}
-        <section className="mb-6 sm:mb-8">
+        <section className="mb-4 sm:mb-6">
           <Card className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-start gap-3 sm:gap-4">
               <div className="relative">
@@ -251,7 +251,6 @@ export default function ProfilePage() {
                       height={64} 
                       className="object-cover w-full h-full"
                       onError={(e) => {
-                        // If image fails to load, show fallback icon
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         const fallback = target.parentElement?.querySelector('.fallback-icon') as HTMLElement;
@@ -270,7 +269,6 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                {/* Hidden file input for profile picture upload */}
                 <input 
                   name="profile_picture"
                   ref={fileInputRef}
@@ -284,12 +282,12 @@ export default function ProfilePage() {
               
               {isEditing ? (
                 <form onSubmit={handleUpdateProfile} className="flex-1">
-                  <div className="mb-4">
+                  <div className="mb-3 sm:mb-4">
                     <Input 
                       id="full_name" 
                       value={fullName} 
                       onChange={(e) => setFullName(e.target.value)}
-                      className="mt-1"
+                      className="h-9 sm:h-10 text-[2.8vw] sm:text-base"
                       disabled={isSaving}
                     />
                   </div>
@@ -306,13 +304,18 @@ export default function ProfilePage() {
                         setFullName(profileData?.full_name || "")
                       }}
                       disabled={isSaving}
+                      className="h-8 sm:h-9 text-[2.8vw] sm:text-base"
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={isSaving} className="min-w-[100px]">
+                    <Button 
+                      type="submit" 
+                      disabled={isSaving} 
+                      className="min-w-[80px] sm:min-w-[100px] h-8 sm:h-9 text-[2.8vw] sm:text-base"
+                    >
                       {isSaving ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
                           Saving...
                         </>
                       ) : (
@@ -325,10 +328,15 @@ export default function ProfilePage() {
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h2 className="text-lg sm:text-xl font-bold">{profileData?.full_name || "Anonymous User"}</h2>
-                      <p className="text-sm sm:text-base text-slate-500">{profileData?.email}</p>
+                      <h2 className="text-[3.2vw] sm:text-xl font-bold">{profileData?.full_name || "Anonymous User"}</h2>
+                      <p className="text-[2.8vw] sm:text-base text-slate-500">{profileData?.email}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="text-sm sm:text-base">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setIsEditing(true)} 
+                      className="h-8 sm:h-9 text-[2.8vw] sm:text-base"
+                    >
                       <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                       Edit
                     </Button>
@@ -340,10 +348,10 @@ export default function ProfilePage() {
         </section>
 
         {/* Saved Studies */}
-        <section className="mb-6 sm:mb-8">
+        <section className="mb-4 sm:mb-6">
           <div className="flex items-center mb-3 sm:mb-4">
             <Heart className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-slate-900" />
-            <h2 className="text-xl sm:text-2xl font-bold">Saved Studies</h2>
+            <h2 className="text-[3.2vw] sm:text-2xl font-bold">Saved Studies</h2>
           </div>
 
           {profileData?.savedStudiesData && profileData.savedStudiesData.length > 0 ? (
@@ -357,17 +365,20 @@ export default function ProfilePage() {
                 <Link key={study.id} href={`/studies/${study.id}`} className="block">
                   <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-base sm:text-xl font-bold">{study.title}</h3>
+                      <h3 className="text-[3.2vw] sm:text-xl font-bold">{study.title}</h3>
                       <div className="flex items-center gap-1 sm:gap-2">
-                        <span className="text-xs sm:text-sm text-slate-500">{study.readTime}</span>
+                        <span className="text-[2.8vw] sm:text-sm text-slate-500">{study.readTime}</span>
                       </div>
                     </div>
-                    <p className="text-sm sm:text-base text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
+                    <p className="text-[2.8vw] sm:text-base text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs sm:text-sm text-slate-500">{study.verses.join(", ")}</span>
-                      <span className="text-xs sm:text-sm text-primary font-medium flex items-center">
+                      <span className="text-[2.8vw] sm:text-sm text-slate-500">{study.verses.join(", ")}</span>
+                      <span className="hidden sm:flex items-center text-sm text-primary font-medium">
                         Start Reading
-                        <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 ml-1" />
+                        <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                      </span>
+                      <span className="sm:hidden">
+                        <ArrowRight className="h-3.5 w-3.5 text-primary" />
                       </span>
                     </div>
                   </div>
@@ -377,9 +388,9 @@ export default function ProfilePage() {
           ) : (
             <div className="text-center py-6 sm:py-8 bg-slate-50 rounded-xl border border-slate-100">
               <Heart className="h-8 w-8 sm:h-10 sm:w-10 text-slate-300 mx-auto mb-2 sm:mb-3" />
-              <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">No saved studies yet</h3>
-              <p className="text-sm sm:text-base text-slate-500 mb-3 sm:mb-4">Save your favorite studies to access them anytime</p>
-              <Button asChild className="text-sm sm:text-base">
+              <h3 className="text-[3.2vw] sm:text-xl font-semibold mb-1 sm:mb-2">No saved studies yet</h3>
+              <p className="text-[2.8vw] sm:text-base text-slate-500 mb-3 sm:mb-4">Save your favorite studies to access them anytime</p>
+              <Button asChild className="h-8 sm:h-9 text-[2.8vw] sm:text-base">
                 <Link href="/studies">Browse Studies</Link>
               </Button>
             </div>
@@ -387,10 +398,10 @@ export default function ProfilePage() {
         </section>
 
         {/* Recent Studies */}
-        <section className="mb-6 sm:mb-8">
+        <section className="mb-4 sm:mb-6">
           <div className="flex items-center mb-3 sm:mb-4">
             <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-slate-900" />
-            <h2 className="text-xl sm:text-2xl font-bold">Recent Studies</h2>
+            <h2 className="text-[3.2vw] sm:text-2xl font-bold">Recent Studies</h2>
           </div>
 
           {profileData?.recentStudiesData && profileData.recentStudiesData.length > 0 ? (
@@ -404,16 +415,16 @@ export default function ProfilePage() {
                 <Link key={study.id} href={`/studies/${study.id}`} className="block">
                   <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-base sm:text-xl font-bold">{study.title}</h3>
+                      <h3 className="text-[3.2vw] sm:text-xl font-bold">{study.title}</h3>
                       <div className="flex items-center gap-1 sm:gap-2">
-                        <span className="text-xs sm:text-sm text-slate-500">{study.readTime}</span>
+                        <span className="text-[2.8vw] sm:text-sm text-slate-500">{study.readTime}</span>
                       </div>
                     </div>
-                    <p className="text-sm sm:text-base text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
+                    <p className="text-[2.8vw] sm:text-base text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs sm:text-sm text-slate-500">{study.verses.join(", ")}</span>
+                      <span className="text-[2.8vw] sm:text-sm text-slate-500">{study.verses.join(", ")}</span>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs sm:text-sm text-slate-500">
+                        <span className="text-[2.8vw] sm:text-sm text-slate-500">
                           {study.userLastReadTime ? formatDate(study.userLastReadTime) : "Recently"}
                         </span>
                       </div>
@@ -425,9 +436,9 @@ export default function ProfilePage() {
           ) : (
             <div className="text-center py-6 sm:py-8 bg-slate-50 rounded-xl border border-slate-100">
               <Clock className="h-8 w-8 sm:h-10 sm:w-10 text-slate-300 mx-auto mb-2 sm:mb-3" />
-              <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">No recent studies</h3>
-              <p className="text-sm sm:text-base text-slate-500 mb-3 sm:mb-4">Your recently viewed studies will appear here</p>
-              <Button asChild className="text-sm sm:text-base">
+              <h3 className="text-[3.2vw] sm:text-xl font-semibold mb-1 sm:mb-2">No recent studies</h3>
+              <p className="text-[2.8vw] sm:text-base text-slate-500 mb-3 sm:mb-4">Your recently viewed studies will appear here</p>
+              <Button asChild className="h-8 sm:h-9 text-[2.8vw] sm:text-base">
                 <Link href="/studies">Browse Studies</Link>
               </Button>
             </div>
@@ -436,53 +447,53 @@ export default function ProfilePage() {
 
         {/* Settings */}
         {isClient && (
-          <section className="mb-6 sm:mb-8">
+          <section className="mb-4 sm:mb-6">
             <div className="flex items-center mb-3 sm:mb-4">
               <Settings className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-slate-900" />
-              <h2 className="text-xl sm:text-2xl font-bold">Settings</h2>
+              <h2 className="text-[3.2vw] sm:text-2xl font-bold">Settings</h2>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Bible Translation */}
               <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-                <h3 className="text-base sm:text-lg font-semibold mb-2">Bible Translation</h3>
+                <h3 className="text-[3.2vw] sm:text-lg font-semibold mb-2">Bible Translation</h3>
                 <Select value={contextPreferences.preferredTranslation} onValueChange={(value) => contextUpdatePreference("preferredTranslation", value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10 text-[2.8vw] sm:text-base">
                     <SelectValue placeholder="Select translation" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ESV">English Standard Version (ESV)</SelectItem>
-                    <SelectItem value="KJV">King James Version (KJV)</SelectItem>
-                    <SelectItem value="NIV">New International Version (NIV)</SelectItem>
-                    <SelectItem value="NASB">New American Standard Bible (NASB)</SelectItem>
-                    <SelectItem value="NLT">New Living Translation (NLT)</SelectItem>
+                    <SelectItem value="ESV" className="text-[2.8vw] sm:text-base">English Standard Version (ESV)</SelectItem>
+                    <SelectItem value="KJV" className="text-[2.8vw] sm:text-base">King James Version (KJV)</SelectItem>
+                    <SelectItem value="NIV" className="text-[2.8vw] sm:text-base">New International Version (NIV)</SelectItem>
+                    <SelectItem value="NASB" className="text-[2.8vw] sm:text-base">New American Standard Bible (NASB)</SelectItem>
+                    <SelectItem value="NLT" className="text-[2.8vw] sm:text-base">New Living Translation (NLT)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Font Size */}
               <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-                <h3 className="text-base sm:text-lg font-semibold mb-2">Font Size</h3>
+                <h3 className="text-[3.2vw] sm:text-lg font-semibold mb-2">Font Size</h3>
                 <Select value={contextPreferences.fontSize} onValueChange={(value) => contextUpdatePreference("fontSize", value as "small" | "medium" | "large")}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10 text-[2.8vw] sm:text-base">
                     <SelectValue placeholder="Select size" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="small">Small</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="large">Large</SelectItem>
+                    <SelectItem value="small" className="text-[2.8vw] sm:text-base">Small</SelectItem>
+                    <SelectItem value="medium" className="text-[2.8vw] sm:text-base">Medium</SelectItem>
+                    <SelectItem value="large" className="text-[2.8vw] sm:text-base">Large</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Notifications */}
               <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
-                <h3 className="text-base sm:text-lg font-semibold mb-2">Notifications</h3>
+                <h3 className="text-[3.2vw] sm:text-lg font-semibold mb-2">Notifications</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">Daily Verse</p>
-                      <p className="text-sm text-slate-500">Receive a new verse every day</p>
+                      <p className="text-[2.8vw] sm:text-base font-medium">Daily Verse</p>
+                      <p className="text-[2.8vw] sm:text-sm text-slate-500">Receive a new verse every day</p>
                     </div>
                     <Switch
                       checked={contextPreferences.notifications.dailyVerse}
@@ -494,8 +505,8 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">Study Reminders</p>
-                      <p className="text-sm text-slate-500">Get reminded about your Bible study</p>
+                      <p className="text-[2.8vw] sm:text-base font-medium">Study Reminders</p>
+                      <p className="text-[2.8vw] sm:text-sm text-slate-500">Get reminded about your Bible study</p>
                     </div>
                     <Switch
                       checked={contextPreferences.notifications.studyReminders}
@@ -512,8 +523,8 @@ export default function ProfilePage() {
               <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold">Dark Mode</h3>
-                    <p className="text-sm text-slate-500">Use dark theme for better reading at night</p>
+                    <h3 className="text-[3.2vw] sm:text-lg font-semibold">Dark Mode</h3>
+                    <p className="text-[2.8vw] sm:text-sm text-slate-500">Use dark theme for better reading at night</p>
                   </div>
                   <Switch
                     checked={contextPreferences.darkMode}
@@ -526,8 +537,8 @@ export default function ProfilePage() {
               <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold">Save History</h3>
-                    <p className="text-sm text-slate-500">Keep track of your Bible study progress</p>
+                    <h3 className="text-[3.2vw] sm:text-lg font-semibold">Save History</h3>
+                    <p className="text-[2.8vw] sm:text-sm text-slate-500">Keep track of your Bible study progress</p>
                   </div>
                   <Switch
                     checked={contextPreferences.saveHistory}

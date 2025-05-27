@@ -216,57 +216,47 @@ export default function SearchPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
-      <header className="pt-12 pb-6 px-6">
-        <h1 className="text-4xl font-extrabold tracking-tight mb-1">Search</h1>
-        <p className="text-slate-500 text-lg">Find verses and studies</p>
+      <header className="pt-6 pb-4 px-4 sm:pt-12 sm:pb-6 sm:px-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-1">Search</h1>
+            <p className="text-slate-500 text-base sm:text-lg">Find verses and studies</p>
+          </div>
+          <Select value={translation} onValueChange={setTranslation}>
+            <SelectTrigger className="w-24 sm:w-32 text-sm sm:text-base h-9 sm:h-10">
+              <SelectValue placeholder="Translation" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ESV" className="text-sm sm:text-base">ESV</SelectItem>
+              <SelectItem value="KJV" className="text-sm sm:text-base">KJV</SelectItem>
+              <SelectItem value="NIV" className="text-sm sm:text-base">NIV</SelectItem>
+              <SelectItem value="NASB" className="text-sm sm:text-base">NASB</SelectItem>
+              <SelectItem value="NLT" className="text-sm sm:text-base">NLT</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-6 pb-32">
+      <main className="flex-1 px-4 sm:px-6 pb-32">
         {/* Search Form */}
         <form onSubmit={handleSearch} className="mb-8">
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
               <Input
                 placeholder="Search studies and verses..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="pl-10 bg-slate-100 border-slate-200"
+                className="pl-10 bg-slate-100 border-slate-200 text-sm sm:text-base h-10 sm:h-11"
               />
             </div>
-            <Select value={translation} onValueChange={setTranslation}>
-              <SelectTrigger className="w-24">
-                <SelectValue placeholder="Translation" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ESV">ESV</SelectItem>
-                <SelectItem value="KJV">KJV</SelectItem>
-                <SelectItem value="NIV">NIV</SelectItem>
-                <SelectItem value="NASB">NASB</SelectItem>
-                <SelectItem value="NLT">NLT</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              type="submit"
-              className="min-w-24 hidden sm:flex"
-              disabled={!query.trim() || isSearching}
-            >
-              {isSearching ? (
-                <span className="flex items-center">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Searching...
-                </span>
-              ) : (
-                "Search"
-              )}
-            </Button>
           </div>
         </form>
 
         {/* Suggested Topics */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Suggested Topics</h2>
+          <h2 className="text-xl sm:text-2xl font-bold mb-4">Suggested Topics</h2>
           <div className="flex flex-wrap gap-2">
             {suggestedTerms.map((term) => (
               <Button
@@ -274,7 +264,7 @@ export default function SearchPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleTopicClick(term)}
-                className={`bg-slate-100 border-slate-200 hover:bg-slate-200 ${
+                className={`bg-slate-100 border-slate-200 hover:bg-slate-200 text-sm sm:text-base ${
                   activeTopic?.toLowerCase() === term.toLowerCase() ? "bg-slate-900 text-white hover:bg-slate-900" : ""
                 }`}
               >
@@ -288,44 +278,44 @@ export default function SearchPage() {
         {hasSearched && (
           <section id="search-results" className="mb-8">
             {error ? (
-              <div className="bg-red-50 text-red-800 p-4 rounded-lg">
+              <div className="bg-red-50 text-red-800 p-4 rounded-lg text-sm sm:text-base">
                 {error}
               </div>
             ) : isSearching ? (
               <div className="text-center py-8">
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-slate-600">Searching...</p>
+                <p className="text-slate-600 text-sm sm:text-base">Searching...</p>
               </div>
             ) : totalResults > 0 ? (
               <Tabs defaultValue={activeTab} value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
                 <TabsList className="grid w-full grid-cols-3 mb-4">
-                  <TabsTrigger value="all">All Results ({totalResults})</TabsTrigger>
-                  <TabsTrigger value="verses">Verses ({verseResults.length})</TabsTrigger>
-                  <TabsTrigger value="studies">Studies ({studyResults.length})</TabsTrigger>
+                  <TabsTrigger value="all" className="text-sm sm:text-base">All Results ({totalResults})</TabsTrigger>
+                  <TabsTrigger value="verses" className="text-sm sm:text-base">Verses ({verseResults.length})</TabsTrigger>
+                  <TabsTrigger value="studies" className="text-sm sm:text-base">Studies ({studyResults.length})</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="all" className="space-y-6">
                   {/* Show studies first */}
                   {studyResults.length > 0 && (
                     <div>
-                      <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
-                        <BookText className="h-4 w-4" />
+                      <div className="flex items-center gap-2 mb-2 text-sm sm:text-base font-medium text-muted-foreground">
+                        <BookText className="h-4 w-4 sm:h-5 sm:w-5" />
                         <h4>Bible Studies</h4>
                       </div>
                       <div className="space-y-4">
                         {studyResults.map((study) => (
                           <Link key={study.id} href={`/studies/${study.id}`} className="block">
-                            <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
+                            <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all">
                               <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-bold text-xl">{study.title}</h3>
-                                <span className="text-slate-500 text-sm">{study.readTime}</span>
+                                <h3 className="font-bold text-lg sm:text-xl">{study.title}</h3>
+                                <span className="text-slate-500 text-xs sm:text-sm">{study.readTime}</span>
                               </div>
-                              <p className="text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
+                              <p className="text-slate-600 mb-3 text-sm sm:text-base">{study.context?.substring(0, 120)}...</p>
                               <div className="flex justify-between items-center">
-                                <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
-                                <span className="text-primary text-sm font-medium flex items-center">
+                                <span className="text-slate-500 text-xs sm:text-sm">{study.verses.join(", ")}</span>
+                                <span className="text-primary text-xs sm:text-sm font-medium flex items-center">
                                   View study
-                                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                                  <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1" />
                                 </span>
                               </div>
                             </div>
@@ -338,8 +328,8 @@ export default function SearchPage() {
                   {/* Then show verses */}
                   {verseResults.length > 0 && (
                     <div>
-                      <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
-                        <BookOpen className="h-4 w-4" />
+                      <div className="flex items-center gap-2 mb-2 text-sm sm:text-base font-medium text-muted-foreground">
+                        <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
                         <h4>Bible Verses</h4>
                       </div>
                       <div className="space-y-4">
@@ -368,9 +358,9 @@ export default function SearchPage() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <BookOpen className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold mb-2">No verse results</h3>
-                      <p className="text-muted-foreground mb-4">Try different search terms or check the Studies tab.</p>
+                      <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg sm:text-xl font-semibold mb-2">No verse results</h3>
+                      <p className="text-muted-foreground mb-4 text-sm sm:text-base">Try different search terms or check the Studies tab.</p>
                     </div>
                   )}
                 </TabsContent>
@@ -380,17 +370,17 @@ export default function SearchPage() {
                     <div className="space-y-4">
                       {studyResults.map((study) => (
                         <Link key={study.id} href={`/studies/${study.id}`} className="block">
-                          <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
+                          <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all">
                             <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-xl">{study.title}</h3>
-                              <span className="text-slate-500 text-sm">{study.readTime}</span>
+                              <h3 className="font-bold text-lg sm:text-xl">{study.title}</h3>
+                              <span className="text-slate-500 text-xs sm:text-sm">{study.readTime}</span>
                             </div>
-                            <p className="text-slate-600 mb-3">{study.context?.substring(0, 120)}...</p>
+                            <p className="text-slate-600 mb-3 text-sm sm:text-base">{study.context?.substring(0, 120)}...</p>
                             <div className="flex justify-between items-center">
-                              <span className="text-slate-500 text-sm">{study.verses.join(", ")}</span>
-                              <span className="text-primary text-sm font-medium flex items-center">
+                              <span className="text-slate-500 text-xs sm:text-sm">{study.verses.join(", ")}</span>
+                              <span className="text-primary text-xs sm:text-sm font-medium flex items-center">
                                 View study
-                                <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1" />
                               </span>
                             </div>
                           </div>
@@ -399,20 +389,20 @@ export default function SearchPage() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <BookText className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold mb-2">No study results</h3>
-                      <p className="text-muted-foreground mb-4">Try different search terms or check the Verses tab.</p>
+                      <BookText className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg sm:text-xl font-semibold mb-2">No study results</h3>
+                      <p className="text-muted-foreground mb-4 text-sm sm:text-base">Try different search terms or check the Verses tab.</p>
                     </div>
                   )}
                 </TabsContent>
               </Tabs>
             ) : (
               <div className="text-center py-8">
-                <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <BookOpen className="h-8 w-8 text-slate-400" />
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">No results found</h3>
-                <p className="text-slate-500">We couldn't find any studies or verses matching your search criteria.</p>
+                <h3 className="text-xl sm:text-2xl font-semibold mb-2">No results found</h3>
+                <p className="text-slate-500 text-sm sm:text-base">We couldn't find any studies or verses matching your search criteria.</p>
               </div>
             )}
           </section>
@@ -421,14 +411,14 @@ export default function SearchPage() {
         {/* Example Questions */}
         <section>
           <div className="flex items-center mb-4">
-            <Sparkles className="h-5 w-5 mr-2 text-amber-500" />
-            <h2 className="text-2xl font-bold">Try asking a question</h2>
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-amber-500" />
+            <h2 className="text-xl sm:text-2xl font-bold">Try asking a question</h2>
           </div>
           <div className="space-y-3">
             {exampleQueries.map((q, i) => (
               <button
                 key={i}
-                className="w-full text-left p-4 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm border border-slate-200 transition-colors"
+                className="w-full text-left p-4 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm sm:text-base border border-slate-200 transition-colors"
                 onClick={async () => {
                   setQuery(q)
                   setIsSearching(true)
@@ -488,24 +478,24 @@ export default function SearchPage() {
 
         {/* Quick Links */}
         <section className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Quick Links</h2>
+          <h2 className="text-xl sm:text-2xl font-bold mb-4">Quick Links</h2>
           <div className="grid grid-cols-2 gap-3">
             <Link href="/studies" className="block">
-              <div className="bg-slate-100 rounded-xl p-5 h-32 flex flex-col justify-between transition-all hover:bg-slate-200">
-                <BookOpen className="h-6 w-6 text-slate-900" />
+              <div className="bg-slate-100 rounded-xl p-4 sm:p-5 h-28 sm:h-32 flex flex-col justify-between transition-all hover:bg-slate-200">
+                <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-slate-900" />
                 <div>
-                  <h3 className="font-bold text-lg">Studies</h3>
-                  <p className="text-slate-500 text-sm">Browse all studies</p>
+                  <h3 className="font-bold text-base sm:text-lg">Studies</h3>
+                  <p className="text-slate-500 text-xs sm:text-sm">Browse all studies</p>
                 </div>
               </div>
             </Link>
 
             <Link href="/ask" className="block">
-              <div className="bg-slate-100 rounded-xl p-5 h-32 flex flex-col justify-between transition-all hover:bg-slate-200">
-                <BookText className="h-6 w-6 text-slate-900" />
+              <div className="bg-slate-100 rounded-xl p-4 sm:p-5 h-28 sm:h-32 flex flex-col justify-between transition-all hover:bg-slate-200">
+                <BookText className="h-6 w-6 sm:h-8 sm:w-8 text-slate-900" />
                 <div>
-                  <h3 className="font-bold text-lg">Ask</h3>
-                  <p className="text-slate-500 text-sm">Ask Bible questions</p>
+                  <h3 className="font-bold text-base sm:text-lg">Ask</h3>
+                  <p className="text-slate-500 text-xs sm:text-sm">Ask Bible questions</p>
                 </div>
               </div>
             </Link>

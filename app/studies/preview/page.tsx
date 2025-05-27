@@ -95,91 +95,105 @@ export default function StudyPreviewPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <div className="study-header">
+      <div className="study-header px-4 sm:px-6 py-4 sm:py-6 border-b">
         <Link href="/studies/new" className="back-button">
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
         </Link>
-        <h1 className="header-title">{study.title}</h1>
+        <h1 className="header-title text-lg sm:text-2xl font-bold">{study.title}</h1>
       </div>
 
-      <div className="study-content">
+      <div className="study-content px-4 sm:px-6 py-6 sm:py-8">
         <AnimatePresence>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="animate-fade-in"
+            className="animate-fade-in space-y-8"
           >
-            <h2 className="section-title">Scripture</h2>
-            <div className="scripture-cards">
-              {study.verses.map((verse: string, index: number) => (
-                <VerseDisplay key={index} reference={verse} translation="ESV" />
-              ))}
-            </div>
-
-            <h2 className="section-title">Study Insights</h2>
-            <div className="insight-cards">
-              <div className="insight-card">
-                <h3 className="insight-title">Context</h3>
-                <p className="insight-content">{study.context}</p>
+            <section>
+              <h2 className="section-title text-lg sm:text-xl font-bold mb-4">Scripture</h2>
+              <div className="space-y-4">
+                {study.verses.map((verse: string, index: number) => (
+                  <VerseDisplay key={index} reference={verse} translation="ESV" />
+                ))}
               </div>
+            </section>
 
-              {study.insights.map((insight: Insight, index: number) => (
-                <div key={index} className="insight-card">
-                  <h3 className="insight-title">{insight.title}</h3>
-                  <p className="insight-content">{insight.description}</p>
+            <section>
+              <h2 className="section-title text-lg sm:text-xl font-bold mb-4">Study Insights</h2>
+              <div className="space-y-4">
+                <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                  <h3 className="insight-title text-base sm:text-lg font-semibold mb-2">Context</h3>
+                  <p className="insight-content text-sm sm:text-base text-slate-700 leading-relaxed">{study.context}</p>
                 </div>
-              ))}
-            </div>
 
-            <h2 className="section-title">Application</h2>
-            <div className="insight-cards">
-              <div className="insight-card">
-                <p className="insight-content">{study.application}</p>
-              </div>
-            </div>
-
-            <h2 className="section-title">Reflection Questions</h2>
-            <div className="question-cards">
-              {study.relatedQuestions?.map((question, index) => (
-                <div key={index} className="question-card">
-                  <div className="question-number">{index + 1}</div>
-                  <p className="question-text">{question}</p>
-                </div>
-              )) || (
-                [
-                  "How does this study apply to your life right now?",
-                  "What verse stood out to you the most and why?",
-                  "What is one action you can take based on what you've learned?",
-                  "How might this change your understanding of God's character?",
-                ].map((question, index) => (
-                  <div key={index} className="question-card">
-                    <div className="question-number">{index + 1}</div>
-                    <p className="question-text">{question}</p>
+                {study.insights.map((insight: Insight, index: number) => (
+                  <div key={index} className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                    <h3 className="insight-title text-base sm:text-lg font-semibold mb-2">{insight.title}</h3>
+                    <p className="insight-content text-sm sm:text-base text-slate-700 leading-relaxed">{insight.description}</p>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h2 className="section-title text-lg sm:text-xl font-bold mb-4">Application</h2>
+              <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                <p className="text-sm sm:text-base text-slate-700 leading-relaxed">{study.application}</p>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="section-title text-lg sm:text-xl font-bold mb-4">Reflection Questions</h2>
+              <div className="space-y-4">
+                {study.relatedQuestions?.map((question, index) => (
+                  <div key={index} className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center">
+                        <span className="text-white font-semibold text-sm sm:text-base">{index + 1}</span>
+                      </div>
+                      <p className="text-slate-700 text-sm sm:text-base leading-relaxed">{question}</p>
+                    </div>
+                  </div>
+                )) || (
+                  [
+                    "How does this study apply to your life right now?",
+                    "What verse stood out to you the most and why?",
+                    "What is one action you can take based on what you've learned?",
+                    "How might this change your understanding of God's character?",
+                  ].map((question, index) => (
+                    <div key={index} className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm sm:text-base">{index + 1}</span>
+                        </div>
+                        <p className="text-slate-700 text-sm sm:text-base leading-relaxed">{question}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
 
             <div className="flex justify-center mt-8 mb-4">
               <Button 
-                className="mr-2 min-w-32"
+                className="min-w-32 text-sm sm:text-base h-10 sm:h-11 px-6"
                 onClick={handleSaveStudy}
                 disabled={saving || saved || study?.cannotGenerate}
               >
                 {saved ? (
                   <span className="flex items-center">
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                     Saved
                   </span>
                 ) : saving ? (
                   <span className="flex items-center">
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 animate-spin" />
                     Saving...
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                     Save Study
                   </span>
                 )}

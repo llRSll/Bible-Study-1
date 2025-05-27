@@ -215,8 +215,8 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
   if (loading) {
     return (
         <div className="flex flex-col min-h-screen bg-white items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="mt-4 text-slate-500">loading study...</p>
+          <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+          <p className="mt-4 text-sm sm:text-base text-slate-500">loading study...</p>
         </div>
       )
   }
@@ -224,22 +224,22 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
   if (error || !study) {
     return (
       <div className="flex flex-col min-h-screen">
-        <div className="study-header">
+        <div className="study-header px-4 sm:px-6 py-4 sm:py-6 border-b">
           <Link href="/studies" className="back-button">
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
           </Link>
-          <h1 className="header-title">Error</h1>
+          <h1 className="header-title text-lg sm:text-2xl font-bold">Error</h1>
         </div>
-        <div className="flex flex-col items-center justify-center flex-1 p-6">
-          <h2 className="text-2xl font-bold text-red-500 mb-4">
+        <div className="flex flex-col items-center justify-center flex-1 p-4 sm:p-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-red-500 mb-3 sm:mb-4">
             {error || "Study not found"}
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 text-center">
             We couldn't load the study you requested. Please try again later.
           </p>
           <Link
             href="/studies"
-            className="bg-primary text-white py-2 px-6 rounded-lg hover:bg-primary/90 transition-colors"
+            className="bg-primary text-white py-2 px-4 sm:px-6 rounded-lg hover:bg-primary/90 transition-colors text-sm sm:text-base"
           >
             Return to Studies
           </Link>
@@ -250,95 +250,76 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
 
   return (
     <div className="flex flex-col min-h-screen pb-16">
-      <div className="study-header">
+      <div className="study-header px-4 sm:px-6 py-4 sm:py-6 border-b">
         <Link href="/studies" className="back-button">
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
         </Link>
-        <h1 className="header-title">{study.title}</h1>
+        <h1 className="header-title text-lg sm:text-2xl font-bold">{study.title}</h1>
       </div>
 
-      <div className="study-content">
-        {/* <div className="flex justify-between items-center mb-4">
-          {isCurrentUserOwner && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {study.isPublic ? "Public" : "Private"}
-              </span>
-              <Switch 
-                checked={study.isPublic}
-                onCheckedChange={handlePrivacyToggle}
-                disabled={publishLoading}
-                aria-label="Toggle study privacy"
-              />
-              {study.isPublic ? (
-                <EyeIcon className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <EyeOffIcon className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-          )}
-        </div> */}
-
+      <div className="study-content px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex justify-end mb-4">
           <Select value={translation} onValueChange={handleTranslationChange}>
-            <SelectTrigger className="w-24">
+            <SelectTrigger className="w-20 sm:w-24 text-sm sm:text-base">
               <SelectValue placeholder="Translation" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ESV">ESV</SelectItem>
-              <SelectItem value="KJV">KJV</SelectItem>
-              <SelectItem value="NIV">NIV</SelectItem>
-              <SelectItem value="NASB">NASB</SelectItem>
-              <SelectItem value="NLT">NLT</SelectItem>
+              <SelectItem value="ESV" className="text-sm sm:text-base">ESV</SelectItem>
+              <SelectItem value="KJV" className="text-sm sm:text-base">KJV</SelectItem>
+              <SelectItem value="NIV" className="text-sm sm:text-base">NIV</SelectItem>
+              <SelectItem value="NASB" className="text-sm sm:text-base">NASB</SelectItem>
+              <SelectItem value="NLT" className="text-sm sm:text-base">NLT</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <h2 className="section-title">Scripture</h2>
+        <h2 className="text-[3.2vw] sm:text-lg font-semibold mb-3 sm:mb-4 text-slate-900">Scripture</h2>
 
-        <div className="scripture-cards">
+        <div className="space-y-4">
           {study.verses.map((verse, index) => (
             <VerseDisplay key={index} reference={verse} translation={translation} />
           ))}
         </div>
 
-        <h2 className="section-title">Study Insights</h2>
+        <h2 className="text-[3.2vw] sm:text-lg font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 text-slate-900">Study Insights</h2>
 
-        <div className="insight-cards">
+        <div className="space-y-4">
           {study.insights.map((insight, index) => (
-            <div key={index} className="insight-card">
-              <h3 className="insight-title">{insight.title}</h3>
-              <p className="insight-content">{insight.description}</p>
+            <div key={index} className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+              <h3 className="text-[3.2vw] sm:text-lg font-semibold mb-2 text-slate-900">{insight.title}</h3>
+              <p className="text-[2.8vw] sm:text-base text-slate-700 leading-relaxed">{insight.description}</p>
             </div>
           ))}
         </div>
 
         {study.context && (
           <>
-            <h2 className="section-title">Context</h2>
-            <div className="insight-card">
-              <p className="insight-content">{study.context}</p>
+            <h2 className="text-[3.2vw] sm:text-lg font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 text-slate-900">Context</h2>
+            <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed">{study.context}</p>
             </div>
           </>
         )}
 
         {study.application && (
           <>
-            <h2 className="section-title">Application</h2>
-            <div className="insight-card">
-              <p className="insight-content">{study.application}</p>
+            <h2 className="text-[3.2vw] sm:text-lg font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 text-slate-900">Application</h2>
+            <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed">{study.application}</p>
             </div>
           </>
         )}
 
         {study.relatedQuestions && study.relatedQuestions.length > 0 && (
           <>
-            <h2 className="section-title">Reflection Questions</h2>
-            <div className="question-cards">
+            <h2 className="text-[3.2vw] sm:text-lg font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 text-slate-900">Reflection Questions</h2>
+            <div className="space-y-3">
               {study.relatedQuestions.map((question, index) => (
-                <div key={index} className="question-card">
-                  <div className="question-number">{index + 1}</div>
-                  <p className="question-text">{question}</p>
+                <div key={index} className="flex items-start gap-3 bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                  <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center">
+                    <span className="text-white font-semibold text-xs sm:text-sm">{index + 1}</span>
+                  </div>
+                  <p className="text-[2.8vw] sm:text-base text-slate-700 leading-relaxed">{question}</p>
                 </div>
               ))}
             </div>
@@ -347,54 +328,56 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Share Study</DialogTitle>
+        <DialogContent className="w-[90vw] sm:max-w-md p-4 sm:p-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-[3.2vw] sm:text-xl font-bold">Share Study</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
             <Input
               readOnly
               value={typeof window !== 'undefined' ? `${window.location.origin}${pathname}` : ''}
-              className="flex-1"
+              className="flex-1 text-[2.8vw] sm:text-base h-10 sm:h-11"
             />
-            <Button onClick={handleCopyLink} className="flex items-center gap-2">
-              <Copy className="h-4 w-4" />
+            <Button 
+              onClick={handleCopyLink} 
+              className="flex items-center justify-center gap-2 text-[2.8vw] sm:text-base h-10 sm:h-11 px-4 sm:px-6"
+            >
+              <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
               Copy
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <div className="study-actions">
-        <div className="action-buttons">
+      <div className="study-actions fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+        <div className="flex justify-center items-center gap-4">
           <button
-            className={`action-button ${bookmarked ? "active" : ""}`}
+            className={`action-button ${bookmarked ? "active" : ""} p-2 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center`}
             onClick={handleBookmarkToggle}
             disabled={bookmarkLoading}
             aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
           >
-            <Bookmark className="action-icon" fill={bookmarked ? "currentColor" : "none"} />
+            <Bookmark className="h-5 w-5 sm:h-6 sm:w-6" fill={bookmarked ? "currentColor" : "none"} />
           </button>
-           <LikeButton 
-           studyId={study.id || ""} 
-           initialLikes={study.likes || 0}
-         />
+          <div className="flex items-center justify-center">
+            <LikeButton 
+              studyId={study.id || ""} 
+              initialLikes={study.likes || 0}
+            />
+          </div>
           <button 
-            className="action-button" 
+            className="action-button p-2 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center" 
             aria-label="Share"
             onClick={handleShare}
           >
-            <Share2 className="action-icon" />
+            <Share2 className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
-         
-          
-      
           <button 
-            className="action-button" 
+            className="action-button p-2 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center" 
             aria-label="Comment"
             onClick={() => router.push('/ask')}
           >
-            <MessageSquare className="action-icon" />
+            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
       </div>

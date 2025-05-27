@@ -49,31 +49,31 @@ export function StudyCard({
       <Card className={cn("card-hover", className)}>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg font-serif">{title}</CardTitle>
+            <CardTitle className="text-[4.2vw] sm:text-lg font-serif">{title}</CardTitle>
             <div className="flex items-center gap-2">
               {!isPublic && (
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                <span className="text-[2.4vw] sm:text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                   Private
                 </span>
               )}
               {category && (
-                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                <span className="text-[2.4vw] sm:text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                   {category}
                 </span>
               )}
             </div>
           </div>
-          {description && <CardDescription>{description}</CardDescription>}
+          {description && <CardDescription className="text-[3.2vw] sm:text-base">{description}</CardDescription>}
         </CardHeader>
         <CardFooter className="pt-0 flex justify-between items-center">
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <BookOpen className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-1.5 text-[2.8vw] sm:text-sm text-muted-foreground">
+            <BookOpen className="h-[3.5vw] w-[3.5vw] sm:h-3.5 sm:w-3.5" />
             <span>{versesText}</span>
           </div>
           <div className="flex items-center gap-3">
             {date && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
+              <div className="flex items-center gap-1.5 text-[2.4vw] sm:text-xs text-muted-foreground">
+                <Clock className="h-[3vw] w-[3vw] sm:h-3 sm:w-3" />
                 <span>{date}</span>
               </div>
             )}
