@@ -104,9 +104,7 @@ export async function getUserProfile() {
 
   }
 
-  // console.log("savedStudiesData", savedStudiesData)
-  // console.log("recentStudiesData", recentStudiesData)
-  console.log("profile.recent_studies", profile.recent_studies)
+  
   // Combine everything into a single response
   return {
     data: {
