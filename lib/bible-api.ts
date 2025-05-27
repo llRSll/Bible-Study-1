@@ -174,6 +174,31 @@ export async function getDailyVerse(translation = "ESV"): Promise<VerseResponse>
     const today = new Date();
     const dateKey = today.toISOString().split('T')[0];
     
+    // Check client-side cache first (if we're in a browser environment)
+    if (typeof window !== 'undefined') {
+      try {
+        const cachedData = localStorage.getItem(`dailyVerse_${dateKey}_${translation}`);
+        if (cachedData) {
+          const cache = JSON.parse(cachedData) as DailyVerseCache;
+          const now = new Date();
+          const cachedDate = new Date(cache.timestamp);
+          
+          // Check if the cached verse is from today (same date)
+          // This ensures the cache expires at midnight
+          if (now.toDateString() === cachedDate.toDateString()) {
+            console.log("Using client-side cached daily verse");
+            return cache.verse;
+          } else {
+            // Cache is from a previous day, remove it
+            localStorage.removeItem(`dailyVerse_${dateKey}_${translation}`);
+          }
+        }
+      } catch (cacheError) {
+        console.log("Error reading from client cache:", cacheError);
+        // Continue with server-side logic if client cache fails
+      }
+    }
+    
     // Initialize Supabase client
     const supabase = await createClient();
     
@@ -186,31 +211,180 @@ export async function getDailyVerse(translation = "ESV"): Promise<VerseResponse>
     
     // If we found today's verse in the database, return it
     if (dailyVerse && !error) {
-      return {
+      const verseResponse = {
         reference: dailyVerse.reference,
         text: dailyVerse.text,
         translation: dailyVerse.translation,
         copyright: dailyVerse.copyright,
       };
+      
+      // Save to client-side cache if in browser
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`dailyVerse_${dateKey}_${translation}`, JSON.stringify({
+            verse: verseResponse,
+            timestamp: Date.now()
+          }));
+        } catch (storageError) {
+          console.log("Error saving to client cache:", storageError);
+          // Continue even if we can't cache
+        }
+      }
+      
+      return verseResponse;
     }
     
-    // If we don't have today's verse, generate a new one and store it
-    // Generate a random verse from our common verses
-    const availableVerses = Object.keys(commonVerses);
-    const randomIndex = Math.floor(Math.random() * availableVerses.length);
-    const reference = availableVerses[randomIndex];
-    const text = commonVerses[reference];
+    // If we don't have today's verse, generate a new one using a consistent method
+    // Use the date to generate a deterministic verse reference
     
-    // Create the verse response
-    const verseResponse: VerseResponse = {
-      reference,
-      text,
-      translation,
-      copyright: `Scripture from ${translation}`,
-    };
+    // Create a deterministic hash based on today's date
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+    const year = today.getFullYear();
+    
+    // Generate a verse reference using the date
+    // This creates a specific book, chapter, and verse pattern that changes daily
+    
+    // Define Bible book structure for more dynamic verse selection
+    const bibleBooks = [
+      // Old Testament books with approximate chapter counts
+      { name: "Genesis", chapters: 50 },
+      { name: "Matthew", chapters: 28 },
+      { name: "Exodus", chapters: 40 },
+      { name: "Mark", chapters: 16 },
+      { name: "Leviticus", chapters: 27 },
+      { name: "Luke", chapters: 24 },
+      { name: "Numbers", chapters: 36 },
+      { name: "John", chapters: 21 },
+      { name: "Deuteronomy", chapters: 34 },
+      { name: "Acts", chapters: 28 },
+      { name: "Joshua", chapters: 24 },
+      { name: "Romans", chapters: 16 },
+      { name: "Judges", chapters: 21 },
+      { name: "1 Corinthians", chapters: 16 },
+      { name: "Ruth", chapters: 4 },
+      { name: "2 Corinthians", chapters: 13 },
+      { name: "1 Samuel", chapters: 31 },
+      { name: "Galatians", chapters: 6 },
+      { name: "2 Samuel", chapters: 24 },
+      { name: "Ephesians", chapters: 6 },
+      { name: "1 Kings", chapters: 22 },
+      { name: "Philippians", chapters: 4 },
+      { name: "2 Kings", chapters: 25 },
+      { name: "Colossians", chapters: 4 },
+      { name: "1 Chronicles", chapters: 29 },
+      { name: "1 Thessalonians", chapters: 5 },
+      { name: "2 Chronicles", chapters: 36 },
+      { name: "2 Thessalonians", chapters: 3 },
+      { name: "Ezra", chapters: 10 },
+      { name: "1 Timothy", chapters: 6 },
+      { name: "Nehemiah", chapters: 13 },
+      { name: "2 Timothy", chapters: 4 },
+      { name: "Esther", chapters: 10 },
+      { name: "Titus", chapters: 3 },
+      { name: "Job", chapters: 42 },
+      { name: "Philemon", chapters: 1 },
+      { name: "Psalms", chapters: 150 },
+      { name: "Hebrews", chapters: 13 },
+      { name: "Proverbs", chapters: 31 },
+      { name: "James", chapters: 5 },
+      { name: "Ecclesiastes", chapters: 12 },
+      { name: "1 Peter", chapters: 5 },
+      { name: "Song of Solomon", chapters: 8 },
+      { name: "2 Peter", chapters: 3 },
+      { name: "Isaiah", chapters: 66 },
+      { name: "1 John", chapters: 5 },
+      { name: "Jeremiah", chapters: 52 },
+      { name: "2 John", chapters: 1 },
+      { name: "Lamentations", chapters: 5 },
+      { name: "3 John", chapters: 1 },
+      { name: "Ezekiel", chapters: 48 },
+      { name: "Jude", chapters: 1 },
+      { name: "Daniel", chapters: 12 },
+      { name: "Revelation", chapters: 22 },
+      { name: "Hosea", chapters: 14 },
+      { name: "Joel", chapters: 3 },
+      { name: "Amos", chapters: 9 },
+      { name: "Obadiah", chapters: 1 },
+      { name: "Jonah", chapters: 4 },
+      { name: "Micah", chapters: 7 },
+      { name: "Nahum", chapters: 3 },
+      { name: "Habakkuk", chapters: 3 },
+      { name: "Zephaniah", chapters: 3 },
+      { name: "Haggai", chapters: 2 },
+      { name: "Zechariah", chapters: 14 },
+      { name: "Malachi", chapters: 4 },
+    ];
+    
+    // Function to get a randomized list of Bible books
+    function getRandomizedBibleBooks() {
+      // Create a copy of the bibleBooks array to avoid modifying the original
+      const books = [...bibleBooks];
+      
+      // Fisher-Yates shuffle algorithm to randomize the order
+      for (let i = books.length - 1; i > 0; i--) {
+        // Generate a random index between 0 and i
+        const j = Math.floor(Math.random() * (i + 1));
+        // Swap elements at indices i and j
+        [books[i], books[j]] = [books[j], books[i]];
+      }
+      
+      return books;
+    }
+    
+    // Generate a hash value from the date
+    const dateHash = (dayOfYear + year) % 366;
+    
+    // Get randomized Bible books
+    const randomizedBooks = getRandomizedBibleBooks();
+    
+    // Use the hash to select a book
+    const bookIndex = dateHash % randomizedBooks.length;
+    const book = randomizedBooks[bookIndex];
+    
+    // Generate a chapter number (1-based)
+    const chapterHash = (dateHash * 31) % book.chapters + 1;
+    
+    // Generate a verse number (typically 1-30, but might exceed actual verses in some chapters)
+    // We'll limit to a reasonable range to avoid invalid references
+    const verseNumber = (dateHash * 13) % 30 + 1;
+    
+    // Create the reference
+    const reference = `${book.name} ${chapterHash}:${verseNumber}`;
+    
+    // Try to fetch this verse from the Bible API
+    let verseResponse: VerseResponse;
+    try {
+      verseResponse = await fetchVerse(reference, translation);
+    } catch (fetchError) {
+      console.error("Error fetching daily verse from API:", fetchError);
+      // If fetching fails, fall back to a well-known verse based on the date
+      const fallbackVerses = Object.keys(commonVerses);
+      const fallbackIndex = dateHash % fallbackVerses.length;
+      const fallbackReference = fallbackVerses[fallbackIndex];
+      
+      verseResponse = {
+        reference: fallbackReference,
+        text: commonVerses[fallbackReference],
+        translation,
+        copyright: `Scripture from ${translation}`,
+      };
+    }
     
     // Store the verse in the database for future requests
     await storeNewDailyVerse(verseResponse, dateKey);
+    
+    // Save to client-side cache if in browser
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`dailyVerse_${dateKey}_${translation}`, JSON.stringify({
+          verse: verseResponse,
+          timestamp: Date.now()
+        }));
+      } catch (storageError) {
+        console.log("Error saving to client cache:", storageError);
+        // Continue even if we can't cache
+      }
+    }
     
     return verseResponse;
   } catch (error) {
@@ -221,21 +395,35 @@ export async function getDailyVerse(translation = "ESV"): Promise<VerseResponse>
     const today = new Date();
     const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
     const year = today.getFullYear();
-    const dailyKey = `${CACHE_VERSION}-${year}-${dayOfYear}-${translation}`;
+    const dateHash = (dayOfYear + year) % 366;
     
     // Use the daily key to select a consistent verse
     const availableVerses = Object.keys(commonVerses);
-    const hash = Array.from(dailyKey).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const index = hash % availableVerses.length;
+    const index = dateHash % availableVerses.length;
     const reference = availableVerses[index];
     
     // Return the verse from our common verses
-    return {
+    const fallbackVerseResponse = {
       reference,
       text: commonVerses[reference],
       translation,
       copyright: `Scripture from ${translation}`,
     };
+    
+    // Save fallback verse to client-side cache if in browser
+    if (typeof window !== 'undefined') {
+      try {
+        const dateKey = today.toISOString().split('T')[0];
+        localStorage.setItem(`dailyVerse_${dateKey}_${translation}`, JSON.stringify({
+          verse: fallbackVerseResponse,
+          timestamp: Date.now()
+        }));
+      } catch (storageError) {
+        console.log("Error saving fallback verse to client cache:", storageError);
+      }
+    }
+    
+    return fallbackVerseResponse;
   }
 }
 

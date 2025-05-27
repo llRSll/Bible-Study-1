@@ -48,19 +48,19 @@ export default function NewStudyPage() {
           title: "Limited Study Generated",
           description: "Only a placeholder study could be created due to limitations",
         })
-        setLoading(false)
       } else {
         toast({
           title: "Study generated successfully",
           description: "Redirecting to study preview...",
         })
-        
-        // Store the generated study in sessionStorage to pass to the preview page
-        sessionStorage.setItem('previewStudy', JSON.stringify(generatedStudy))
-        
-        // Navigate to the study preview page
-        router.push(`/studies/preview`)
       }
+      
+      // Store the generated study in sessionStorage to pass to the preview page
+      // Always store and redirect, even for limited studies
+      sessionStorage.setItem('previewStudy', JSON.stringify(generatedStudy))
+      
+      // Navigate to the study preview page
+      router.push(`/studies/preview`)
     } catch (error) {
       console.error("Failed to generate study:", error)
       toast({
@@ -273,85 +273,6 @@ export default function NewStudyPage() {
             </form>
           </CardContent>
         </Card>
-
-        {study && (
-          <Card className="border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl font-bold">{study.title}</CardTitle>
-              <CardDescription className="text-sm sm:text-base">
-                {study.verses.length} verses • {study.readTime}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-2">Scripture</h3>
-                  <div className="space-y-4">
-                    {study.verses.map((verse, index) => (
-                      <VerseDisplay key={index} reference={verse} translation="ESV" />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-2">Context</h3>
-                  <p className="text-sm sm:text-base text-slate-700 leading-relaxed">{study.context}</p>
-                </div>
-
-                {study.insights.map((insight: Insight, index: number) => (
-                  <div key={index}>
-                    <h3 className="text-base sm:text-lg font-semibold mb-2">{insight.title}</h3>
-                    <p className="text-sm sm:text-base text-slate-700 leading-relaxed">{insight.description}</p>
-                  </div>
-                ))}
-
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-2">Application</h3>
-                  <p className="text-sm sm:text-base text-slate-700 leading-relaxed">{study.application}</p>
-                </div>
-
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-2">Reflection Questions</h3>
-                  <div className="space-y-3">
-                    {study.relatedQuestions?.map((question, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center">
-                          <span className="text-white font-semibold text-xs sm:text-sm">{index + 1}</span>
-                        </div>
-                        <p className="text-sm sm:text-base text-slate-700">{question}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-center">
-                  <Button
-                    onClick={handleSaveStudy}
-                    className="min-w-32 text-sm sm:text-base h-10 sm:h-11 px-6"
-                    disabled={saving || saved || study.cannotGenerate}
-                  >
-                    {saved ? (
-                      <span className="flex items-center">
-                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                        Saved
-                      </span>
-                    ) : saving ? (
-                      <span className="flex items-center">
-                        <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 animate-spin" />
-                        Saving...
-                      </span>
-                    ) : (
-                      <span className="flex items-center">
-                        <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                        Save Study
-                      </span>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   )

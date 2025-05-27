@@ -80,7 +80,6 @@ export async function getUserProfile() {
       .select("*")
       .in("id", recentStudyIds);
 
-    console.log("recentStudies", recentStudies)
 
     if (!recentError && recentStudies) {
       // Sort the recent studies to match the order in the profile.recent_studies array

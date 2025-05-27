@@ -377,9 +377,6 @@ export default function ProfilePage() {
                         Start Reading
                         <ArrowRight className="h-3.5 w-3.5 ml-1" />
                       </span>
-                      <span className="sm:hidden">
-                        <ArrowRight className="h-3.5 w-3.5 text-primary" />
-                      </span>
                     </div>
                   </div>
                 </Link>

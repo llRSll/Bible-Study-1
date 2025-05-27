@@ -27,28 +27,35 @@ export default function HomePage() {
   useEffect(() => {
     async function loadDailyVerse() {
       try {
-        // Check localStorage first
-        const cached = localStorage.getItem('dailyVerse');
-        if (cached) {
-          const { verse, timestamp, translation } = JSON.parse(cached);
+        // Always try to fetch the latest verse from the server first
+        let verse;
+        try {
+          verse = await getDailyVerse(preferences.preferredTranslation);
           
-          // If we have a cached verse from today and the translation matches, use it
-          if (!needsNewVerse(timestamp) && translation === preferences.preferredTranslation) {
-            setDailyVerse(verse);
-            setLoading(false);
-            return;
+          // Cache the server-provided verse
+          localStorage.setItem('dailyVerse', JSON.stringify({
+            verse,
+            timestamp: Date.now(),
+            translation: preferences.preferredTranslation
+          }));
+        } catch (serverError) {
+          console.error("Error fetching from server:", serverError);
+          
+          // If server fetch fails, check localStorage as fallback
+          const cached = localStorage.getItem('dailyVerse');
+          if (cached) {
+            const { verse: cachedVerse, timestamp, translation } = JSON.parse(cached);
+            
+            // Only use cached verse if it's from today and translation matches
+            if (!needsNewVerse(timestamp) && translation === preferences.preferredTranslation) {
+              verse = cachedVerse;
+            } else {
+              throw new Error("Cached verse is outdated or translation doesn't match");
+            }
+          } else {
+            throw new Error("No cached verse available");
           }
         }
-
-        // If we need a new verse, fetch it
-        const verse = await getDailyVerse(preferences.preferredTranslation);
-        
-        // Cache the new verse
-        localStorage.setItem('dailyVerse', JSON.stringify({
-          verse,
-          timestamp: Date.now(),
-          translation: preferences.preferredTranslation
-        }));
         
         setDailyVerse(verse);
       } catch (error) {
@@ -96,8 +103,13 @@ export default function HomePage() {
             <div className="relative z-10">
               <h2 className="text-[4.2vw] sm:text-2xl font-bold mb-2">Daily Verse</h2>
               {loading ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-white/80" />
+                <div className="space-y-3">
+                  <div className="h-[3.8vw] sm:h-6 bg-slate-800/20 rounded animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent bg-[length:200%_100%]" />
+                  <div className="h-[3.8vw] sm:h-6 bg-slate-800/20 rounded animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent bg-[length:200%_100%]" />
+                  <div className="flex justify-between items-center">
+                    <div className="h-[2.8vw] sm:h-4 w-24 bg-slate-800/20 rounded animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent bg-[length:200%_100%]" />
+                    <div className="h-[2.4vw] sm:h-3 w-12 bg-slate-800/20 rounded animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent bg-[length:200%_100%]" />
+                  </div>
                 </div>
               ) : dailyVerse ? (
                 <>

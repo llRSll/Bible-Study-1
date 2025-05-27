@@ -42,10 +42,10 @@ export default function SearchPage() {
     if (topicParam) {
       // If we have a topic parameter, set it as active and trigger search
       setActiveTopic(topicParam)
+      setQuery(topicParam) // Set the search input to the topic
       setHasSearched(true)
       setIsSearching(true)
       setError(null)
-      setQuery("")
 
       // Perform the search
       Promise.all([
@@ -142,10 +142,10 @@ export default function SearchPage() {
     if (isSearching) return
 
     setActiveTopic(term) // Set active topic immediately
+    setQuery(term) // Set the search input to the selected topic
     setHasSearched(true)
     setIsSearching(true)
     setError(null)
-    setQuery("") // Clear the search input when clicking a topic
     setStudyResults([])
     setVerseResults([])
 
@@ -282,9 +282,50 @@ export default function SearchPage() {
                 {error}
               </div>
             ) : isSearching ? (
-              <div className="text-center py-8">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-slate-600 text-sm sm:text-base">Searching...</p>
+              <div className="space-y-6">
+                {/* Shimmer effect for studies */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-sm sm:text-base font-medium text-muted-foreground">
+                    <BookText className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <h4>Bible Studies</h4>
+                  </div>
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="h-6 w-3/4 bg-slate-200 rounded animate-pulse"></div>
+                          <div className="h-4 w-16 bg-slate-200 rounded animate-pulse"></div>
+                        </div>
+                        <div className="h-4 w-full bg-slate-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse mb-3"></div>
+                        <div className="flex justify-between items-center">
+                          <div className="h-4 w-1/3 bg-slate-200 rounded animate-pulse"></div>
+                          <div className="h-4 w-24 bg-slate-200 rounded animate-pulse"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Shimmer effect for verses */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-sm sm:text-base font-medium text-muted-foreground">
+                    <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <h4>Bible Verses</h4>
+                  </div>
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="h-5 w-1/4 bg-slate-200 rounded animate-pulse"></div>
+                          <div className="h-4 w-16 bg-slate-200 rounded animate-pulse"></div>
+                        </div>
+                        <div className="h-4 w-full bg-slate-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : totalResults > 0 ? (
               <Tabs defaultValue={activeTab} value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
@@ -313,7 +354,7 @@ export default function SearchPage() {
                               <p className="text-slate-600 mb-3 text-sm sm:text-base">{study.context?.substring(0, 120)}...</p>
                               <div className="flex justify-between items-center">
                                 <span className="text-slate-500 text-xs sm:text-sm">{study.verses.join(", ")}</span>
-                                <span className="text-primary text-xs sm:text-sm font-medium flex items-center">
+                                <span className="hidden sm:flex items-center text-primary text-xs sm:text-sm font-medium">
                                   View study
                                   <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1" />
                                 </span>
@@ -378,7 +419,7 @@ export default function SearchPage() {
                             <p className="text-slate-600 mb-3 text-sm sm:text-base">{study.context?.substring(0, 120)}...</p>
                             <div className="flex justify-between items-center">
                               <span className="text-slate-500 text-xs sm:text-sm">{study.verses.join(", ")}</span>
-                              <span className="text-primary text-xs sm:text-sm font-medium flex items-center">
+                              <span className="hidden sm:flex items-center text-primary text-xs sm:text-sm font-medium">
                                 View study
                                 <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1" />
                               </span>
