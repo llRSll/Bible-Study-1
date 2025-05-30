@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import SupabaseService from "../../../lib/services/supabaseService";
+import { createClient } from "@/utils/supabase/client";
 
 export default function Logout() {
   const router = useRouter();
@@ -13,9 +13,11 @@ export default function Logout() {
     (async () => {
       try {
         setIsLoggingOut(true);
-        const { error, success } = await SupabaseService.auth.signOut();
-        if (!success) {
-          setError(error);
+        const supabase = createClient();
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) {
+          setError(error.message);
           console.error("Error signing out:", error);
         } else {
           router.push("/");

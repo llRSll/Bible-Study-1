@@ -50,8 +50,8 @@ EXECUTE FUNCTION public.handle_updated_at();
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, saved_studies, recent_studies)
-  VALUES (NEW.id, NEW.email, '{}', '{}');
+  INSERT INTO public.profiles (id, email, saved_studies, recent_studies, first_login)
+  VALUES (NEW.id, NEW.email, '{}', '{}', TRUE);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

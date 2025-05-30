@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
 import { useUserPreferences } from "@/contexts/user-preferences"
+import { useOnboarding } from "@/contexts/onboarding-context"
 import { getUserProfile, updateProfile, uploadProfilePicture } from "@/lib/actions/profile"
 import { formatDistanceToNow } from "date-fns"
-import { ArrowRight, Bell, Book, Clock, Edit, Heart, Loader2, LogOut, Moon, Settings, Shield, Upload, User } from "lucide-react"
+import { ArrowRight, Bell, Book, Clock, Edit, Heart, HelpCircle, Loader2, LogOut, Moon, Settings, Shield, Upload, User } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
@@ -28,6 +29,7 @@ const defaultPreferences = {
 export default function ProfilePage() {
   // Use a try-catch at the component level to handle potential context errors
   const { preferences, updatePreference } = useUserPreferences()
+  const { setShowOnboarding } = useOnboarding()
   const contextPreferences = preferences || defaultPreferences
   const contextUpdatePreference = updatePreference || ((_key: string, _value: any) => {})
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -196,6 +198,11 @@ export default function ProfilePage() {
     }
   };
 
+  // Handle showing onboarding
+  const handleShowHelp = () => {
+    setShowOnboarding(true)
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-white items-center justify-center">
@@ -213,26 +220,28 @@ export default function ProfilePage() {
           <h1 className="text-[3.2vw] sm:text-4xl font-extrabold tracking-tight mb-1">Profile</h1>
           <p className="text-[2.8vw] sm:text-lg text-slate-500">Manage your account</p>
         </div>
-        <Button 
-          variant="outline" 
-          className="flex items-center gap-1 sm:gap-2 text-[2.8vw] sm:text-base text-slate-700 h-8 sm:h-10"
-          onClick={handleLogout}
-          disabled={loggingOut}
-        >
-          {loggingOut ? (
-            <>
-              <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-              <span className="hidden sm:inline">Logging out...</span>
-              <span className="sm:hidden">Logout...</span>
-            </>
-          ) : (
-            <>
-              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Log out</span>
-              <span className="sm:hidden">Logout</span>
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-1 sm:gap-2 text-[2.8vw] sm:text-base text-slate-700 h-8 sm:h-10"
+            onClick={handleLogout}
+            disabled={loggingOut}
+          >
+            {loggingOut ? (
+              <>
+                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                <span className="hidden sm:inline">Logging out...</span>
+                <span className="sm:hidden">Logout...</span>
+              </>
+            ) : (
+              <>
+                <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Log out</span>
+                <span className="sm:hidden">Logout</span>
+              </>
+            )}
+          </Button>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -387,9 +396,6 @@ export default function ProfilePage() {
               <Heart className="h-8 w-8 sm:h-10 sm:w-10 text-slate-300 mx-auto mb-2 sm:mb-3" />
               <h3 className="text-[3.2vw] sm:text-xl font-semibold mb-1 sm:mb-2">No saved studies yet</h3>
               <p className="text-[2.8vw] sm:text-base text-slate-500 mb-3 sm:mb-4">Save your favorite studies to access them anytime</p>
-              <Button asChild className="h-8 sm:h-9 text-[2.8vw] sm:text-base">
-                <Link href="/studies">Browse Studies</Link>
-              </Button>
             </div>
           )}
         </section>
@@ -435,9 +441,6 @@ export default function ProfilePage() {
               <Clock className="h-8 w-8 sm:h-10 sm:w-10 text-slate-300 mx-auto mb-2 sm:mb-3" />
               <h3 className="text-[3.2vw] sm:text-xl font-semibold mb-1 sm:mb-2">No recent studies</h3>
               <p className="text-[2.8vw] sm:text-base text-slate-500 mb-3 sm:mb-4">Your recently viewed studies will appear here</p>
-              <Button asChild className="h-8 sm:h-9 text-[2.8vw] sm:text-base">
-                <Link href="/studies">Browse Studies</Link>
-              </Button>
             </div>
           )}
         </section>
@@ -547,6 +550,15 @@ export default function ProfilePage() {
           </section>
         )}
       </main>
+
+      {/* Floating Help Button */}
+      <Button
+        onClick={handleShowHelp}
+        className="fixed bottom-20 right-4 rounded-full w-12 h-12 shadow-lg bg-primary hover:bg-primary/90 flex items-center justify-center"
+        title="Help & Onboarding"
+      >
+        <HelpCircle className="h-6 w-6 text-white" />
+      </Button>
     </div>
   )
 }

@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
+import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
-
+  const cookieStore = cookies();
 
   const data = {
     email: formData.get("email") as string,
@@ -22,7 +22,7 @@ export async function login(formData: FormData) {
   // Check if user exists
   const { data: existingUser, error: searchError } = await supabase
     .from("profiles")
-    .select("id")
+    .select("id, first_login")
     .eq("email", data.email)
     .maybeSingle();
 
@@ -30,25 +30,17 @@ export async function login(formData: FormData) {
     console.error("Error logging in:", searchError);
   }
 
-
   if (!existingUser) {
-
     return {
       success: false,
       error: "No account found with this email. Please sign up first.",
     };
   }
 
-  console.log("existingUser", existingUser);
-
   const { error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
-    // Check if the error indicates the user doesn't exist
-    if (
-      (error.message.includes("user") && error.message.includes("not found")) 
-      
-    ) {
+    if (error.message.includes("user") && error.message.includes("not found")) {
       return {
         success: false,
         error: "No account found with this email. Please sign up first.",
@@ -65,8 +57,26 @@ export async function login(formData: FormData) {
     return { success: false, error: error.message };
   }
 
-  revalidatePath("/", "layout");
-  redirect("/");
+  // Check if this is the user's first login
+  if (existingUser.first_login === null || existingUser.first_login === true) {
+    try {
+      // Mark that this is no longer their first login
+      await supabase
+        .from("profiles")
+        .update({ first_login: false })
+        .eq("id", existingUser.id);
+
+      // Return success with firstLogin flag
+      return { 
+        success: true, 
+        firstLogin: true 
+      };
+    } catch (updateError) {
+      console.error("Error updating first_login status:", updateError);
+    }
+  }
+
+  return { success: true, firstLogin: false };
 }
 
 export async function signup(formData: FormData) {

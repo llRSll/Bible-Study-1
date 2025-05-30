@@ -45,6 +45,14 @@ export default function Login() {
     
     if (result?.error) {
       setError(result.error);
+    } else if (result?.success) {
+      // Store firstLogin state if it's a first login
+      if (result.firstLogin) {
+        localStorage.setItem("firstLogin", "true");
+      }
+      
+      // Redirect to home page
+      window.location.href = "/";
     }
   }
 
