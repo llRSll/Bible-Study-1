@@ -200,6 +200,7 @@ export default function ProfilePage() {
 
   // Handle showing onboarding
   const handleShowHelp = () => {
+    // This triggers help mode via the AppOnboarding component
     setShowOnboarding(true)
   }
 

@@ -40,7 +40,7 @@ export default function OnboardingOverlay({ onClose }: OnboardingOverlayProps) {
 
   const steps = [
     {
-      title: "Welcome to Faithful Study",
+      title: "Welcome to Spiritual",
       description: "Your AI-powered Bible study companion that stays true to scripture",
       icon: BookOpen,
       content: "Discover deeper insights into God's Word with studies generated specifically for you.",    
@@ -132,7 +132,9 @@ export default function OnboardingOverlay({ onClose }: OnboardingOverlayProps) {
                 {currentStep < steps.length - 1 ? (
                   <Button onClick={() => setCurrentStep((prev) => prev + 1)} className="flex-1 sm:flex-auto">Next</Button>
                 ) : (
-                  <Button onClick={completeOnboarding} className="flex-1 sm:flex-auto">Get Started</Button>
+                  <Button onClick={completeOnboarding} className="flex-1 sm:flex-auto">
+                    {onClose ? "Close" : "Get Started"}
+                  </Button>
                 )}
               </div>
             </CardFooter>

@@ -25,7 +25,7 @@ export interface BibleAnswer {
 }
 
 // System prompt to guide Claude in providing biblical answers - updated to emphasize JSON formatting
-const BIBLE_SYSTEM_PROMPT = `You are a knowledgeable biblical scholar assistant for a Bible study app called "Faithful Study".
+const BIBLE_SYSTEM_PROMPT = `You are a knowledgeable biblical scholar assistant for a Bible study app called "Spiritual".
 Your purpose is to answer questions about the Bible, theology, and Christian living with accuracy and wisdom.
 
 When responding to questions:

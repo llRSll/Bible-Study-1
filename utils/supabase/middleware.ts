@@ -6,6 +6,15 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  // Skip auth check for assets and API routes
+  if (
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/api') ||
+    request.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
+  ) {
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -29,50 +38,43 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  try {
+    // Create a timeout promise that resolves after 2 seconds
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => resolve({ data: { user: null } }), 2000);
+    });
+    
+    // Race the auth request against the timeout
+    const { data: { user } } = await Promise.race([
+      supabase.auth.getUser(),
+      timeoutPromise
+    ]) as { data: { user: any } };
 
-  // IMPORTANT: DO NOT REMOVE auth.getUser()
+    // Redirects based on authentication state
+    if (
+      !user &&
+      !request.nextUrl.pathname.includes("/login") &&
+      !request.nextUrl.pathname.includes("/signup") &&
+      !request.nextUrl.pathname.includes("/auth")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      return NextResponse.redirect(url);
+    }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (
-    !user &&
-    !request.nextUrl.pathname.includes("/login") &&
-    !request.nextUrl.pathname.includes("/signup")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
+    if (
+      user &&
+      (request.nextUrl.pathname.includes("/login") ||
+        request.nextUrl.pathname.includes("/signup"))
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+  } catch (error) {
+    console.error("Auth middleware error:", error);
+    // Continue the request even if auth check fails
   }
-
-  if (
-    user &&
-    (request.nextUrl.pathname.includes("/login") ||
-      request.nextUrl.pathname.includes("/signup"))
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
-  }
-
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
 
   return supabaseResponse;
 }

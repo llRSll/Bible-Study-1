@@ -1150,18 +1150,18 @@ export async function searchBible(query: string, translation = "ESV", limit = 10
     // Step 1: Check if we have mock results for common search terms
     const normalizedQuery = query.toLowerCase().trim()
 
-    for (const [term, results] of Object.entries(MOCK_SEARCH_RESULTS)) {
-      if (normalizedQuery.includes(term.toLowerCase())) {
-        console.log(`Using mock results for query containing "${term}"`)
-        return {
-          passages: results.map((result) => ({
-            reference: result.reference,
-            text: result.text,
-            copyright: result.copyright,
-          })),
-        }
-      }
-    }
+    // for (const [term, results] of Object.entries(MOCK_SEARCH_RESULTS)) {
+    //   if (normalizedQuery.includes(term.toLowerCase())) {
+    //     console.log(`Using mock results for query containing "${term}"`)
+    //     return {
+    //       passages: results.map((result) => ({
+    //         reference: result.reference,
+    //         text: result.text,
+    //         copyright: result.copyright,
+    //       })),
+    //     }
+    //   }
+    // }
 
     // Step 2: If we've already encountered API issues, skip the API search
     let apiSearchSucceeded = false

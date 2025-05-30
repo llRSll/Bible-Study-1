@@ -5,9 +5,9 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import type React from "react"
 import "./globals.css"
-import ClientBottomNav from "@/components/ClientBottomNav"
 import AppOnboarding from "@/components/app-onboarding"
 import { Toaster } from "@/components/ui/toaster"
+import AppShell from "@/components/AppShell"
 
 // Use Inter as the primary font
 const inter = Inter({
@@ -17,8 +17,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Bible Study",
-  description: "AI-powered Bible studies that remain true to Biblical teachings",
+  title: "Spiritual",
+  description: "AI-powered Bible studies that deepen your understanding of scripture",
   generator: 'v0.dev'
 }
 
@@ -34,8 +34,7 @@ export default function RootLayout({
           <OnboardingProvider>
             <UserPreferencesProvider>
               <Toaster />
-              <div className="pb-14">{children}</div>
-              <ClientBottomNav />
+              <AppShell>{children}</AppShell>
               <AppOnboarding />
             </UserPreferencesProvider>
           </OnboardingProvider>

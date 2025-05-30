@@ -10,6 +10,16 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  .hide-until-hydrated {
+    display: none !important;
+  }
+}
+
+/* Fix splash screen z-index to be higher than bottom nav */
+.splash-screen {
+  z-index: 9999 !important; /* Higher than any other element */
+  position: fixed;
+  inset: 0;
 }
 
 @layer base {
