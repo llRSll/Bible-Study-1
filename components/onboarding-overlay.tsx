@@ -8,9 +8,10 @@ import { motion, AnimatePresence } from "framer-motion"
 
 interface OnboardingOverlayProps {
   onClose?: () => void;
+  isHelpMode?: boolean;
 }
 
-export default function OnboardingOverlay({ onClose }: OnboardingOverlayProps) {
+export default function OnboardingOverlay({ onClose, isHelpMode = false }: OnboardingOverlayProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false)
@@ -133,7 +134,7 @@ export default function OnboardingOverlay({ onClose }: OnboardingOverlayProps) {
                   <Button onClick={() => setCurrentStep((prev) => prev + 1)} className="flex-1 sm:flex-auto">Next</Button>
                 ) : (
                   <Button onClick={completeOnboarding} className="flex-1 sm:flex-auto">
-                    {onClose ? "Close" : "Get Started"}
+                    {isHelpMode ? "Close" : "Get Started"}
                   </Button>
                 )}
               </div>
