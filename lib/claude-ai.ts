@@ -10,6 +10,11 @@ export interface ScriptureReference {
   text: string
 }
 
+export interface Insight {
+  title: string
+  description: string
+}
+
 export interface BibleAnswer {
   content: string
   scriptures: ScriptureReference[]
@@ -20,7 +25,7 @@ export interface BibleAnswer {
 }
 
 // System prompt to guide Claude in providing biblical answers - updated to emphasize JSON formatting
-const BIBLE_SYSTEM_PROMPT = `You are a knowledgeable biblical scholar assistant for a Bible study app called "Faithful Study".
+const BIBLE_SYSTEM_PROMPT = `You are a knowledgeable biblical scholar assistant for a Bible study app called "Spiritual".
 Your purpose is to answer questions about the Bible, theology, and Christian living with accuracy and wisdom.
 
 When responding to questions:
@@ -198,6 +203,37 @@ function constructManualResponse(text: string, question: string): BibleAnswer {
   }
 }
 
+// Helper function to call Claude API with proper error handling
+async function callClaudeApi(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number = 1000,
+  temperature: number = 0.7
+): Promise<string> {
+  const claudeModel = process.env.CLAUDE_MODEL;
+  if (!claudeModel) {
+    throw new Error("CLAUDE_MODEL is not set");
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY is not set");
+  }
+
+  // Generate response using Claude
+  const { text } = await generateText({
+    model: anthropic(claudeModel),
+    system: systemPrompt,
+    prompt: userPrompt,
+    temperature,
+    maxTokens,
+  });
+
+  console.log("Received response from Claude API");
+  
+  return text;
+}
+
 export async function askBibleQuestion(question: string): Promise<BibleAnswer> {
   try {
     // Construct the prompt for Claude with explicit JSON formatting instructions
@@ -207,16 +243,10 @@ Please provide a biblically-based answer with scripture references. Remember to 
 
     console.log("Calling Claude API with question:", question)
 
-    // Generate response using Claude
-    const { text } = await generateText({
-      model: anthropic("claude-3-haiku-20240307"),
-      system: BIBLE_SYSTEM_PROMPT,
-      prompt: prompt,
-      temperature: 0.7,
-      maxTokens: 1000,
-    })
-
-    console.log("Received response from Claude API")
+    // Call the Claude API using our helper function
+    const text = await callClaudeApi(BIBLE_SYSTEM_PROMPT, prompt);
+    
+    console.log("Received response from Claude API:", text);
 
     // Try to parse the response as JSON
     try {
@@ -299,41 +329,85 @@ Your purpose is to generate well-structured and insightful Bible studies based o
 
 When creating Bible studies:
 1.  Provide a clear and engaging title for the study.
-2.  List 2-4 relevant scripture verses that support the study's theme.
+2.  List 2-4 relevant verses that support the study's theme.
 3.  Write a concise context paragraph that introduces the topic and verses.
-4.  Identify 3-5 key points or insights from the verses and context.
+4.  Identify 3-5 key points or insights with title and description from the verses and context.
 5.  Include a practical application paragraph that encourages personal reflection and action.
+6.  Select the most related category for the study from the following categories:
+    - Spiritual Growth
+    - Christian Living
+    - Theology
+    - Teachings of Jesus
+    - Spritual Disciplines
+7. Generate approximate readTime based on the number of verses and the complexity of the study.
+8. Generate 3-4 questions asking the user about his/her spirtual life related to the study 
+9. Select 1 or more the most related topics from the following topics and include them in the relatedTopics array:
+    - love
+    - faith
+    - strength
+    - wisdom
+    - prayer
+    - grace
+    - salvation
+    - joy
+    - hope
+    - forgiveness
 
 EXTREMELY IMPORTANT: Your response MUST be ONLY valid JSON with NO preamble, NO explanations, and NO text before or after the JSON. Start your response with "{" and end with "}". Do not include any markdown formatting, control characters, or non-printable characters.
 
 Structure your response in this format:
 - title: The title of the Bible study
-- verses: Array of scripture references used in the study
+- verses: Array of strings of the verses
 - context: A paragraph providing context for the verses
-- keyPoints: Array of key insights or points from the verses
+- insights: Array of key insights or points from the verses with title and description
 - application: Practical steps for applying the study to daily life
-
+- category: The most related category for the study
+- readTime: Approximate read time for the study
+- relatedQuestions: Array of questions asking the user about his/her spirtual life related to the study
+- relatedTopics: Array of 1 or more topics related to the study
 Example format:
 {
 "title": "The Power of Prayer",
-"verses": ["Matthew 6:6", "Philippians 4:6-7", "1 Thessalonians 5:16-18"],
+"verses": ["Mathew 6:3", "Philippians 4:6-7", "1 Thessalonians 5:16-18"],
 "context": "Prayer is a vital part of the Christian life...",
-"keyPoints": ["Prayer is communication with God...", "Prayer brings peace...", "We should pray without ceasing..."],
-"application": "Set aside time each day to pray..."
+"insights": [
+{
+"title":"The Importance of Forgiveness",
+"description": "Forgiveness is a central theme in Christianity. Jesus teaches that our willingness to forgive others is directly connected to receiving God's forgiveness. It's not optional for believers but a fundamental aspect of following Christ.
+"
+},
+{
+"title":"Forgiveness as Reflection of God's Character",
+"description": "When we forgive others, we reflect God's character. Paul reminds us in Ephesians that we should forgive as God in Christ has forgiven us. Our forgiveness of others is a response to and reflection of the forgiveness we've received."
+}
+],
+"application": "Set aside time each day to pray...",
+"category": "Spiritual Growth",
+"readTime": "5 minutes",
+"relatedQuestions": ["Is there someone in your life you need to forgive? What is holding you back?", "How can you show forgiveness to someone who has wronged you?", "What are some ways you can practice forgiveness in your daily life?"],
+"relatedTopics": ["prayer"]
 }`
 
 // Default fallback study when parsing fails
 const DEFAULT_FALLBACK_STUDY: BibleStudy = {
   title: "Understanding Biblical Wisdom",
-  verses: ["Proverbs 2:1-6", "James 1:5", "Psalm 119:105"],
+  verses: ["Mathew 6:3", "Philippians 4:6-7", "1 Thessalonians 5:16-18"],
   context:
     "The Bible is filled with wisdom for every aspect of life. The book of Proverbs particularly focuses on practical wisdom for daily living. Scripture teaches that true wisdom comes from God and is available to those who seek it. These passages highlight the importance of seeking wisdom and how it guides our path.",
-  keyPoints: [
-    "Biblical wisdom begins with reverence for God",
-    "Wisdom is available to all who ask God for it",
-    "Scripture provides guidance for making wise decisions",
-    "Wisdom affects every area of life: relationships, work, speech, and more",
+  insights: [
+    {
+      title: "The Importance of Seeking Wisdom",
+      description: "Biblical wisdom begins with reverence for God",
+    },
   ],
+  category: "Christian Living",
+  readTime: "5 minutes",
+  relatedQuestions:[
+    "Is there someone in your life you need to forgive? What is holding you back?",
+     "How can you show forgiveness to someone who has wronged you?", 
+     "What are some ways you can practice forgiveness in your daily life?"
+    ], 
+  relatedTopics: ["wisdom"],
   application:
     "To grow in biblical wisdom, make Scripture reading a daily habit. When facing decisions, look for biblical principles that apply to your situation. Seek counsel from mature Christians who demonstrate wisdom in their own lives. Pray specifically for wisdom, trusting God's promise to provide it. Remember that wisdom is not just knowledge but the application of truth in daily life. Practice what you learn from Scripture, allowing God's wisdom to transform your choices and character.",
   isApiError: true,
@@ -346,11 +420,15 @@ export interface BibleStudy {
   title: string
   verses: string[]
   context: string
-  keyPoints: string[]
+  insights: Insight[]
   application: string
+  category?: string
+  readTime?: string
+  relatedQuestions?: string[],
+  relatedTopics?: string[],
   isApiError?: boolean
   cannotGenerate?: boolean
-  reason?: string
+  reason?: string,
 }
 
 // Manually construct a study from the text when JSON parsing fails
@@ -366,15 +444,16 @@ function constructManualStudy(text: string, topic: string): BibleStudy {
   }
 
   // Try to extract verses
-  let verses: string[] = ["John 3:16", "Romans 8:28"]
-  const versesMatch = text.match(/verses["']?\s*:\s*\[(.*?)\]/)
-
+  let verses: string[] = ["Mathew 6:6", "Philippians 4:6-7", "1 Thessalonians 5:16-18"]
+  const versesMatch = text.match(/verses["']?\s*:\s*\[([\s\S]*?)\]/)
   if (versesMatch && versesMatch[1]) {
-    const versesText = versesMatch[1]
-    // Extract quoted strings from the array
-    const verseMatches = versesText.match(/["']([^"']+)["']/g)
-    if (verseMatches && verseMatches.length > 0) {
-      verses = verseMatches.map((v) => v.replace(/["']/g, ""))
+    try {
+      const verseItems = versesMatch[1].match(/["']([^"']+)["']/g)
+      if (verseItems && verseItems.length > 0) {
+        verses = verseItems.map(v => v.replace(/["']/g, ""))
+      }
+    } catch (e) {
+      console.error("Error extracting verses:", e)
     }
   }
 
@@ -389,21 +468,39 @@ function constructManualStudy(text: string, topic: string): BibleStudy {
     context = contextMatch[1].trim()
   }
 
-  // Try to extract key points
-  let keyPoints: string[] = [
-    "Understanding biblical principles",
-    "Applying God's Word to daily life",
-    "Growing in faith through Scripture",
+  // Try to extract insights
+  let insights: Insight[] = [
+    {
+      title: "Understanding Biblical Principles",
+      description: "The Bible provides guidance for all areas of life."
+    },
+    {
+      title: "Applying God's Word",
+      description: "Scripture is meant to be applied to our daily lives."
+    }
   ]
 
-  const keyPointsMatch = text.match(/keyPoints["']?\s*:\s*\[(.*?)\]/)
-
-  if (keyPointsMatch && keyPointsMatch[1]) {
-    const keyPointsText = keyPointsMatch[1]
-    // Extract quoted strings from the array
-    const pointMatches = keyPointsText.match(/["']([^"']+)["']/g)
-    if (pointMatches && pointMatches.length > 0) {
-      keyPoints = pointMatches.map((p) => p.replace(/["']/g, ""))
+  // Try to extract insights from the text
+  const insightsMatch = text.match(/insights["']?\s*:\s*\[([\s\S]*?)\]/)
+  
+  if (insightsMatch && insightsMatch[1]) {
+    try {
+      const titleMatches = insightsMatch[1].match(/title["']?\s*:\s*["']([^"']+)["']/g) || []
+      const descMatches = insightsMatch[1].match(/description["']?\s*:\s*["']([^"']+)["']/g) || []
+      
+      if (titleMatches.length > 0) {
+        insights = [];
+        for (let i = 0; i < titleMatches.length; i++) {
+          const title = titleMatches[i].split(":")[1].trim().replace(/["']/g, "")
+          const description = i < descMatches.length ? 
+            descMatches[i].split(":")[1].trim().replace(/["']/g, "") : 
+            "Further exploration of this insight is recommended."
+          
+          insights.push({ title, description })
+        }
+      }
+    } catch (e) {
+      console.error("Error extracting insights:", e)
     }
   }
 
@@ -417,13 +514,48 @@ function constructManualStudy(text: string, topic: string): BibleStudy {
   if (applicationMatch && applicationMatch[1]) {
     application = applicationMatch[1].trim()
   }
+  
+  // Try to extract category
+  let category = "Christian Living"
+  const categoryMatch = text.match(/category["']?\s*:\s*["']([^"']+)["']/)
+  if (categoryMatch && categoryMatch[1]) {
+    category = categoryMatch[1].trim()
+  }
+  
+  // Try to extract readTime
+  let readTime = "5 minutes"
+  const readTimeMatch = text.match(/readTime["']?\s*:\s*["']([^"']+)["']/)
+  if (readTimeMatch && readTimeMatch[1]) {
+    readTime = readTimeMatch[1].trim()
+  }
+  
+  // Try to extract relatedQuestions
+  let relatedQuestions: string[] = [
+    "How does this study apply to your life?",
+    "What steps can you take to implement these teachings?",
+    "How might this change your perspective on daily challenges?"
+  ]
+  
+  const questionsMatch = text.match(/relatedQuestions["']?\s*:\s*\[([\s\S]*?)\]/)
+  if (questionsMatch && questionsMatch[1]) {
+    const questionItems = questionsMatch[1].match(/["']([^"']+)["']/g)
+    if (questionItems && questionItems.length > 0) {
+      relatedQuestions = questionItems.map(q => q.replace(/["']/g, ""))
+    }
+  }
+
+  let relatedTopics: string[] = ["love", "faith", "strength", "wisdom", "prayer", "grace", "salvation", "joy", "hope", "forgiveness"]
 
   return {
     title,
     verses,
     context,
-    keyPoints,
+    insights,
     application,
+    category,
+    readTime,
+    relatedQuestions,
+    relatedTopics,
     isApiError: true,
     cannotGenerate: false,
     reason: "The response had formatting issues, but we extracted the key information.",
@@ -444,14 +576,10 @@ export async function generateBibleStudy(topic: string, type = "topic"): Promise
 
     console.log("Calling Claude API for study generation:", topic)
 
-    // Generate response using Claude
-    const { text } = await generateText({
-      model: anthropic("claude-3-haiku-20240307"),
-      system: STUDY_SYSTEM_PROMPT,
-      prompt: prompt,
-      temperature: 0.7,
-      maxTokens: 1500,
-    })
+    // Call the Claude API using our helper function
+    const text = await callClaudeApi(STUDY_SYSTEM_PROMPT, prompt, 1500);
+    
+    console.log("Generated Text:", text)
 
     console.log("Received study response from Claude API")
 
@@ -492,8 +620,21 @@ export async function generateBibleStudy(topic: string, type = "topic"): Promise
       // Create a custom error response that includes the original topic
       return {
         ...DEFAULT_FALLBACK_STUDY,
-        title: `Study on ${topic} (Limited)`,
-        context: `We encountered an issue generating a complete study on "${topic}". The Bible offers wisdom on many topics, and we encourage you to explore Scripture for insights related to this topic.`,
+        title: `Study on ${topic} (Unavailable)`,
+        verses: ["Mathew 6:6", "Philippians 4:6-7", "1 Thessalonians 5:16-18"],
+        context: `We're currently unable to generate a complete study on "${topic}".`,
+        insights: [
+          {
+            title: "The full version would provide detailed insights on your topic",
+            description: "Technical limitations prevented generating the complete study",
+          },
+          {
+            title: "We apologize for the inconvenience",
+            description: "We encourage you to explore this topic in Scripture directly.",
+          },
+        ],
+        application: "We encourage you to explore this topic in Scripture directly.",
+        isApiError: true,
         cannotGenerate: true,
         reason: "There was an error processing the AI response. This could be due to formatting issues.",
       }
@@ -512,12 +653,17 @@ export async function generateBibleStudy(topic: string, type = "topic"): Promise
 
     return {
       title: `Study on ${topic} (Unavailable)`,
-      verses: ["Psalm 119:105", "Proverbs 2:6"],
+      verses: ["Mathew 6:6", "Philippians 4:6-7", "1 Thessalonians 5:16-18"],
       context: `We're currently unable to generate a complete study on "${topic}".`,
-      keyPoints: [
-        "The full version would provide detailed insights on your topic",
-        "Technical limitations prevented generating the complete study",
-        "We apologize for the inconvenience",
+      insights: [
+        {
+          title: "The full version would provide detailed insights on your topic",
+          description: "Technical limitations prevented generating the complete study",
+        },
+        {
+          title: "We apologize for the inconvenience",
+          description: "We encourage you to explore this topic in Scripture directly.",
+        },
       ],
       application: "We encourage you to explore this topic in Scripture directly.",
       isApiError: true,

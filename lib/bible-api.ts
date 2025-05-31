@@ -1,28 +1,32 @@
 "use server"
 
+import { anthropic } from "@ai-sdk/anthropic"
+import { generateText } from "ai"
+import { createClient } from "@/utils/supabase/server"
+
 // Cache for storing fetched verses to avoid duplicate requests
 const verseCache = new Map<string, { text: string; copyright: string }>()
 
 // Interface for verse response
 export interface VerseResponse {
-  reference: string
-  text: string
-  translation: string
-  copyright?: string
-  error?: string
+  reference: string;
+  text: string;
+  translation: string;
+  copyright?: string;
+  error?: string;
 }
 
 // API.Bible configuration
-const API_KEY = "a532731a88fea253a425c6a65a9aaa78"
-const API_URL = "https://api.scripture.api.bible/v1"
+const API_KEY = process.env.BIBLE_API_KEY!
+const API_URL = process.env.BIBLE_API_URL!
 
 // Bible IDs for different translations
 const BIBLE_IDS = {
-  ESV: "06125adad2d5898a-01", // English Standard Version
-  KJV: "de4e12af7f28f599-01", // King James Version
-  NIV: "78a9f6124f344018-01", // New International Version
-  NASB: "01b29f4b342acc35-01", // New American Standard Bible
-  NLT: "65eec8e0b60e656b-01", // New Living Translation
+  ESV: process.env.ESV!, // English Standard Version
+  KJV: process.env.KJV!, // King James Version
+  NIV: process.env.NIV!, // New International Version
+  NASB: process.env.NASB!, // New American Standard Bible
+  NLT: process.env.NLT!, // New Living Translation
 }
 
 // Default Bible ID if translation not found
@@ -36,7 +40,8 @@ const commonVerses: Record<string, string> = {
     "And we know that for those who love God all things work together for good, for those who are called according to his purpose.",
   "Philippians 4:13": "I can do all things through him who strengthens me.",
   "Psalm 23:1": "The LORD is my shepherd; I shall not want.",
-  "Matthew 6:33": "But seek first the kingdom of God and his righteousness, and all these things will be added to you.",
+  "Matthew 6:33": 
+      "But seek first the kingdom of God and his righteousness, and all these things will be added to you.",
   "Proverbs 3:5-6":
     "Trust in the LORD with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths.",
   "1 John 4:7-8":
@@ -51,21 +56,25 @@ const commonVerses: Record<string, string> = {
     "For if you forgive others their trespasses, your heavenly Father will also forgive you, but if you do not forgive others their trespasses, neither will your Father forgive your trespasses.",
   "Colossians 3:13":
     "Bearing with one another and, if one has a complaint against another, forgiving each other; as the Lord has forgiven you, so you also must forgive.",
-  "Hebrews 11:1": "Now faith is the assurance of things hoped for, the conviction of things not seen.",
-  "Romans 10:17": "So faith comes from hearing, and hearing through the word of Christ.",
+  "Hebrews 11:1":
+   "Now faith is the assurance of things hoped for, the conviction of things not seen.",
+  "Romans 10:17": 
+  "So faith comes from hearing, and hearing through the word of Christ.",
   "Galatians 5:22-23":
     "But the fruit of the Spirit is love, joy, peace, patience, kindness, goodness, faithfulness, gentleness, self-control; against such things there is no law.",
   // Add more verses related to forgiveness for the forgiveness study
   "Matthew 18:21-22":
     'Then Peter came up and said to him, "Lord, how often will my brother sin against me, and I forgive him? As many as seven times?" Jesus said to him, "I do not say to you seven times, but seventy-seven times."',
-  "Ephesians 4:32": "Be kind to one another, tenderhearted, forgiving one another, as God in Christ forgave you.",
+  "Ephesians 4:32": 
+       "Be kind to one another, tenderhearted, forgiving one another, as God in Christ forgave you.",
   "Mark 11:25":
     "And whenever you stand praying, forgive, if you have anything against anyone, so that your Father also who is in heaven may forgive you your trespasses.",
   "Luke 6:37":
     "Judge not, and you will not be judged; condemn not, and you will not be condemned; forgive, and you will be forgiven.",
   "1 John 1:9":
     "If we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.",
-  "Acts 3:19": "Repent therefore, and turn back, that your sins may be blotted out.",
+  "Acts 3:19": 
+      "Repent therefore, and turn back, that your sins may be blotted out.",
   // Add more verses for common topics
   "Matthew 11:28-30":
     "Come to me, all who labor and are heavy laden, and I will give you rest. Take my yoke upon you, and learn from me, for I am gentle and lowly in heart, and you will find rest for your souls. For my yoke is easy, and my burden is light.",
@@ -79,7 +88,8 @@ const commonVerses: Record<string, string> = {
     "Do not be conformed to this world, but be transformed by the renewal of your mind, that by testing you may discern what is the will of God, what is good and acceptable and perfect.",
   "2 Corinthians 5:17":
     "Therefore, if anyone is in Christ, he is a new creation. The old has passed away; behold, the new has come.",
-  "Psalm 46:1": "God is our refuge and strength, a very present help in trouble.",
+  "Psalm 46:1":
+     "God is our refuge and strength, a very present help in trouble.",
   "Psalm 27:1":
     "The LORD is my light and my salvation; whom shall I fear? The LORD is the stronghold of my life; of whom shall I be afraid?",
   "Psalm 34:17-18":
@@ -99,8 +109,10 @@ const commonVerses: Record<string, string> = {
     "Go therefore and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit, teaching them to observe all that I have commanded you. And behold, I am with you always, to the end of the age.",
   "John 14:6":
     "Jesus said to him, 'I am the way, and the truth, and the life. No one comes to the Father except through me.'",
-  "John 15:13": "Greater love has no one than this, that someone lay down his life for his friends.",
-  "Romans 5:8": "But God shows his love for us in that while we were still sinners, Christ died for us.",
+  "John 15:13": 
+      "Greater love has no one than this, that someone lay down his life for his friends.",
+  "Romans 5:8": 
+        "But God shows his love for us in that while we were still sinners, Christ died for us.",
   "Romans 8:38-39":
     "For I am sure that neither death nor life, nor angels nor rulers, nor things present nor things to come, nor powers, nor height nor depth, nor anything else in all creation, will be able to separate us from the love of God in Christ Jesus our Lord.",
   "1 Corinthians 10:13":
@@ -117,14 +129,16 @@ const commonVerses: Record<string, string> = {
     "Finally, brothers, whatever is true, whatever is honorable, whatever is just, whatever is pure, whatever is lovely, whatever is commendable, if there is any excellence, if there is anything worthy of praise, think about these things.",
   "Colossians 3:23-24":
     "Whatever you do, work heartily, as for the Lord and not for men, knowing that from the Lord you will receive the inheritance as your reward. You are serving the Lord Christ.",
-  "2 Timothy 1:7": "For God gave us a spirit not of fear but of power and love and self-control.",
+  "2 Timothy 1:7":
+       "For God gave us a spirit not of fear but of power and love and self-control.",
   "Hebrews 4:16":
     "Let us then with confidence draw near to the throne of grace, that we may receive mercy and find grace to help in time of need.",
   "Hebrews 13:5":
     "Keep your life free from love of money, and be content with what you have, for he has said, 'I will never leave you nor forsake you.'",
   "James 1:2-4":
     "Count it all joy, my brothers, when you meet trials of various kinds, for you know that the testing of your faith produces steadfastness. And let steadfastness have its full effect, that you may be perfect and complete, lacking in nothing.",
-  "James 4:7": "Submit yourselves therefore to God. Resist the devil, and he will flee from you.",
+  "James 4:7": 
+     "Submit yourselves therefore to God. Resist the devil, and he will flee from you.",
   "1 Peter 5:7": "Casting all your anxieties on him, because he cares for you.",
   "1 John 3:16":
     "By this we know love, that he laid down his life for us, and we ought to lay down our lives for the brothers.",
@@ -135,6 +149,308 @@ const commonVerses: Record<string, string> = {
 // Flag to track if we've logged the API issue
 let apiIssueLogged = false
 
+// Cache for storing daily verses with stable keys
+const CACHE_VERSION = 'v1';
+
+// Cache for the daily verse with 24-hour expiration
+interface DailyVerseCache {
+  verse: VerseResponse;
+  timestamp: number;
+}
+
+interface DailyVerse {
+  id: string;
+  reference: string;
+  text: string;
+  translation: string;
+  copyright: string;
+  date: string;
+}
+
+// Get daily verse from Supabase or create it if it doesn't exist for today
+export async function getDailyVerse(translation = "ESV"): Promise<VerseResponse> {
+  try {
+    // Create a stable date key for today in ISO format (YYYY-MM-DD)
+    const today = new Date();
+    const dateKey = today.toISOString().split('T')[0];
+    
+    // Check client-side cache first (if we're in a browser environment)
+    if (typeof window !== 'undefined') {
+      try {
+        const cachedData = localStorage.getItem(`dailyVerse_${dateKey}_${translation}`);
+        if (cachedData) {
+          const cache = JSON.parse(cachedData) as DailyVerseCache;
+          const now = new Date();
+          const cachedDate = new Date(cache.timestamp);
+          
+          // Check if the cached verse is from today (same date)
+          // This ensures the cache expires at midnight
+          if (now.toDateString() === cachedDate.toDateString()) {
+            console.log("Using client-side cached daily verse");
+            return cache.verse;
+          } else {
+            // Cache is from a previous day, remove it
+            localStorage.removeItem(`dailyVerse_${dateKey}_${translation}`);
+          }
+        }
+      } catch (cacheError) {
+        console.log("Error reading from client cache:", cacheError);
+        // Continue with server-side logic if client cache fails
+      }
+    }
+    
+    // Initialize Supabase client
+    const supabase = await createClient();
+    
+    // Try to get today's verse from the database
+    const { data: dailyVerse, error } = await supabase
+      .from('daily_verses')
+      .select('*')
+      .eq('date', dateKey)
+      .single();
+    
+    // If we found today's verse in the database, return it
+    if (dailyVerse && !error) {
+      const verseResponse = {
+        reference: dailyVerse.reference,
+        text: dailyVerse.text,
+        translation: dailyVerse.translation,
+        copyright: dailyVerse.copyright,
+      };
+      
+      // Save to client-side cache if in browser
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`dailyVerse_${dateKey}_${translation}`, JSON.stringify({
+            verse: verseResponse,
+            timestamp: Date.now()
+          }));
+        } catch (storageError) {
+          console.log("Error saving to client cache:", storageError);
+          // Continue even if we can't cache
+        }
+      }
+      
+      return verseResponse;
+    }
+    
+    // If we don't have today's verse, generate a new one using a consistent method
+    // Use the date to generate a deterministic verse reference
+    
+    // Create a deterministic hash based on today's date
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+    const year = today.getFullYear();
+    
+    // Generate a verse reference using the date
+    // This creates a specific book, chapter, and verse pattern that changes daily
+    
+    // Define Bible book structure for more dynamic verse selection
+    const bibleBooks = [
+      // Old Testament books with approximate chapter counts
+      { name: "Genesis", chapters: 50 },
+      { name: "Matthew", chapters: 28 },
+      { name: "Exodus", chapters: 40 },
+      { name: "Mark", chapters: 16 },
+      { name: "Leviticus", chapters: 27 },
+      { name: "Luke", chapters: 24 },
+      { name: "Numbers", chapters: 36 },
+      { name: "John", chapters: 21 },
+      { name: "Deuteronomy", chapters: 34 },
+      { name: "Acts", chapters: 28 },
+      { name: "Joshua", chapters: 24 },
+      { name: "Romans", chapters: 16 },
+      { name: "Judges", chapters: 21 },
+      { name: "1 Corinthians", chapters: 16 },
+      { name: "Ruth", chapters: 4 },
+      { name: "2 Corinthians", chapters: 13 },
+      { name: "1 Samuel", chapters: 31 },
+      { name: "Galatians", chapters: 6 },
+      { name: "2 Samuel", chapters: 24 },
+      { name: "Ephesians", chapters: 6 },
+      { name: "1 Kings", chapters: 22 },
+      { name: "Philippians", chapters: 4 },
+      { name: "2 Kings", chapters: 25 },
+      { name: "Colossians", chapters: 4 },
+      { name: "1 Chronicles", chapters: 29 },
+      { name: "1 Thessalonians", chapters: 5 },
+      { name: "2 Chronicles", chapters: 36 },
+      { name: "2 Thessalonians", chapters: 3 },
+      { name: "Ezra", chapters: 10 },
+      { name: "1 Timothy", chapters: 6 },
+      { name: "Nehemiah", chapters: 13 },
+      { name: "2 Timothy", chapters: 4 },
+      { name: "Esther", chapters: 10 },
+      { name: "Titus", chapters: 3 },
+      { name: "Job", chapters: 42 },
+      { name: "Philemon", chapters: 1 },
+      { name: "Psalms", chapters: 150 },
+      { name: "Hebrews", chapters: 13 },
+      { name: "Proverbs", chapters: 31 },
+      { name: "James", chapters: 5 },
+      { name: "Ecclesiastes", chapters: 12 },
+      { name: "1 Peter", chapters: 5 },
+      { name: "Song of Solomon", chapters: 8 },
+      { name: "2 Peter", chapters: 3 },
+      { name: "Isaiah", chapters: 66 },
+      { name: "1 John", chapters: 5 },
+      { name: "Jeremiah", chapters: 52 },
+      { name: "2 John", chapters: 1 },
+      { name: "Lamentations", chapters: 5 },
+      { name: "3 John", chapters: 1 },
+      { name: "Ezekiel", chapters: 48 },
+      { name: "Jude", chapters: 1 },
+      { name: "Daniel", chapters: 12 },
+      { name: "Revelation", chapters: 22 },
+      { name: "Hosea", chapters: 14 },
+      { name: "Joel", chapters: 3 },
+      { name: "Amos", chapters: 9 },
+      { name: "Obadiah", chapters: 1 },
+      { name: "Jonah", chapters: 4 },
+      { name: "Micah", chapters: 7 },
+      { name: "Nahum", chapters: 3 },
+      { name: "Habakkuk", chapters: 3 },
+      { name: "Zephaniah", chapters: 3 },
+      { name: "Haggai", chapters: 2 },
+      { name: "Zechariah", chapters: 14 },
+      { name: "Malachi", chapters: 4 },
+    ];
+    
+    // Function to get a randomized list of Bible books
+    function getRandomizedBibleBooks() {
+      // Create a copy of the bibleBooks array to avoid modifying the original
+      const books = [...bibleBooks];
+      
+      // Fisher-Yates shuffle algorithm to randomize the order
+      for (let i = books.length - 1; i > 0; i--) {
+        // Generate a random index between 0 and i
+        const j = Math.floor(Math.random() * (i + 1));
+        // Swap elements at indices i and j
+        [books[i], books[j]] = [books[j], books[i]];
+      }
+      
+      return books;
+    }
+    
+    // Generate a hash value from the date
+    const dateHash = (dayOfYear + year) % 366;
+    
+    // Get randomized Bible books
+    const randomizedBooks = getRandomizedBibleBooks();
+    
+    // Use the hash to select a book
+    const bookIndex = dateHash % randomizedBooks.length;
+    const book = randomizedBooks[bookIndex];
+    
+    // Generate a chapter number (1-based)
+    const chapterHash = (dateHash * 31) % book.chapters + 1;
+    
+    // Generate a verse number (typically 1-30, but might exceed actual verses in some chapters)
+    // We'll limit to a reasonable range to avoid invalid references
+    const verseNumber = (dateHash * 13) % 30 + 1;
+    
+    // Create the reference
+    const reference = `${book.name} ${chapterHash}:${verseNumber}`;
+    
+    // Try to fetch this verse from the Bible API
+    let verseResponse: VerseResponse;
+    try {
+      verseResponse = await fetchVerse(reference, translation);
+    } catch (fetchError) {
+      console.error("Error fetching daily verse from API:", fetchError);
+      // If fetching fails, fall back to a well-known verse based on the date
+      const fallbackVerses = Object.keys(commonVerses);
+      const fallbackIndex = dateHash % fallbackVerses.length;
+      const fallbackReference = fallbackVerses[fallbackIndex];
+      
+      verseResponse = {
+        reference: fallbackReference,
+        text: commonVerses[fallbackReference],
+        translation,
+        copyright: `Scripture from ${translation}`,
+      };
+    }
+    
+    // Store the verse in the database for future requests
+    await storeNewDailyVerse(verseResponse, dateKey);
+    
+    // Save to client-side cache if in browser
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`dailyVerse_${dateKey}_${translation}`, JSON.stringify({
+          verse: verseResponse,
+          timestamp: Date.now()
+        }));
+      } catch (storageError) {
+        console.log("Error saving to client cache:", storageError);
+        // Continue even if we can't cache
+      }
+    }
+    
+    return verseResponse;
+  } catch (error) {
+    console.error("Error getting daily verse:", error);
+    
+    // If there's an error with the database, fall back to the local implementation
+    // Create a stable cache key that changes only once per day
+    const today = new Date();
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+    const year = today.getFullYear();
+    const dateHash = (dayOfYear + year) % 366;
+    
+    // Use the daily key to select a consistent verse
+    const availableVerses = Object.keys(commonVerses);
+    const index = dateHash % availableVerses.length;
+    const reference = availableVerses[index];
+    
+    // Return the verse from our common verses
+    const fallbackVerseResponse = {
+      reference,
+      text: commonVerses[reference],
+      translation,
+      copyright: `Scripture from ${translation}`,
+    };
+    
+    // Save fallback verse to client-side cache if in browser
+    if (typeof window !== 'undefined') {
+      try {
+        const dateKey = today.toISOString().split('T')[0];
+        localStorage.setItem(`dailyVerse_${dateKey}_${translation}`, JSON.stringify({
+          verse: fallbackVerseResponse,
+          timestamp: Date.now()
+        }));
+      } catch (storageError) {
+        console.log("Error saving fallback verse to client cache:", storageError);
+      }
+    }
+    
+    return fallbackVerseResponse;
+  }
+}
+
+// Store a new daily verse in the database
+async function storeNewDailyVerse(verse: VerseResponse, dateKey: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    
+    // Insert the new daily verse
+    const { error } = await supabase
+      .from('daily_verses')
+      .insert({
+        reference: verse.reference,
+        text: verse.text,
+        translation: verse.translation,
+        copyright: verse.copyright || `Scripture from ${verse.translation}`,
+        date: dateKey,
+      });
+    
+    if (error) {
+      console.error("Error storing daily verse:", error);
+    }
+  } catch (error) {
+    console.error("Error in storeNewDailyVerse:", error);
+  }
+}
+
 /**
  * Fetches a Bible verse from the API.Bible service
  * @param reference The Bible verse reference (e.g., "John 3:16", "Romans 8:28-30")
@@ -143,41 +459,41 @@ let apiIssueLogged = false
 export async function fetchVerse(reference: string, translation = "ESV"): Promise<VerseResponse> {
   try {
     // Normalize the reference by removing extra spaces
-    const normalizedRef = reference.trim()
-    const cacheKey = `${normalizedRef}-${translation}`
+    const normalizedRef = reference.trim();
+    const cacheKey = `${normalizedRef}-${translation}`;
 
     // Check if we have this verse cached
     if (verseCache.has(cacheKey)) {
-      const cached = verseCache.get(cacheKey)!
+      const cached = verseCache.get(cacheKey)!;
       return {
         reference,
         text: cached.text,
         translation,
         copyright: cached.copyright,
-      }
+      };
     }
 
     // Check if we have this verse in our local database first
     // This is a faster path and avoids API calls when possible
     if (normalizedRef in commonVerses) {
-      const text = commonVerses[normalizedRef]
+      const text = commonVerses[normalizedRef];
 
       // Cache the result
       verseCache.set(cacheKey, {
         text,
         copyright: `Scripture from ${translation}`,
-      })
+      });
 
       return {
         reference,
         text,
         translation,
         copyright: `Scripture from ${translation}`,
-      }
+      };
     }
 
     // Get the Bible ID for the requested translation
-    const bibleId = BIBLE_IDS[translation as keyof typeof BIBLE_IDS] || DEFAULT_BIBLE_ID
+    const bibleId = BIBLE_IDS[translation as keyof typeof BIBLE_IDS] || DEFAULT_BIBLE_ID;
 
     // First, we need to search for the verse to get its ID
     const searchResponse = await fetch(
@@ -187,22 +503,22 @@ export async function fetchVerse(reference: string, translation = "ESV"): Promis
           "api-key": API_KEY,
         },
         next: { revalidate: 86400 }, // Cache for 24 hours
-      },
-    )
+      }
+    );
 
     if (!searchResponse.ok) {
       // Log the API issue only once to avoid flooding the console
       if (!apiIssueLogged) {
-        console.error(`Bible API error: ${searchResponse.status} ${searchResponse.statusText}`)
-        apiIssueLogged = true
+        console.error(`Bible API error: ${searchResponse.status} ${searchResponse.statusText}`);
+        apiIssueLogged = true;
       }
 
       // If we get a 403 error, the API key is likely invalid or expired
       // Immediately use the fallback without further API attempts
-      return await fetchFallbackVerse(reference, translation)
+      return await fetchFallbackVerse(reference, translation);
     }
 
-    const searchData = await searchResponse.json()
+    const searchData = await searchResponse.json();
 
     if (!searchData.data || !searchData.data.passages || searchData.data.passages.length === 0) {
       console.log("No passages found for reference:", reference)
@@ -211,7 +527,9 @@ export async function fetchVerse(reference: string, translation = "ESV"): Promis
 
     // Get the first passage that matches our reference
     const passage = searchData.data.passages[0]
-    const text = passage.content.replace(/<[^>]*>/g, "") // Remove HTML tags
+    
+    // Use our utility function to extract clean text from the HTML content
+    const text = extractTextFromHtml(passage.content)
 
     // Cache the result
     verseCache.set(cacheKey, {
@@ -239,7 +557,7 @@ async function fetchVerseById(
   bibleId: string,
   verseId: string,
   reference: string,
-  translation: string,
+  translation: string
 ): Promise<VerseResponse> {
   try {
     // Check if we have this verse in our local database first
@@ -265,37 +583,38 @@ async function fetchVerseById(
         "api-key": API_KEY,
       },
       next: { revalidate: 86400 }, // Cache for 24 hours
-    })
+    }
+  );
 
     if (!response.ok) {
       // If we get a 403 error, immediately use the fallback
-      return await fetchFallbackVerse(reference, translation)
+      return await fetchFallbackVerse(reference, translation);
     }
 
-    const data = await response.json()
+    const data = await response.json();
 
     if (!data.data) {
-      throw new Error("Invalid response format")
+      throw new Error("Invalid response format");
     }
 
-    const text = data.data.content.replace(/<[^>]*>/g, "") // Remove HTML tags
+    const text = data.data.content.replace(/<[^>]*>/g, ""); // Remove HTML tags
 
     // Cache the result
-    const cacheKey = `${reference}-${translation}`
+    const cacheKey = `${reference}-${translation}`;
     verseCache.set(cacheKey, {
       text,
       copyright: data.data.copyright || `Scripture from ${translation}`,
-    })
+    });
 
     return {
       reference,
       text,
       translation,
       copyright: data.data.copyright,
-    }
+    };
   } catch (error) {
-    console.error("Error fetching verse by ID:", error)
-    return await fetchFallbackVerse(reference, translation)
+    console.error("Error fetching verse by ID:", error);
+    return await fetchFallbackVerse(reference, translation);
   }
 }
 
@@ -308,26 +627,26 @@ async function fetchFallbackVerse(reference: string, translation: string): Promi
 
   // Check if we have this verse in our common verses
   if (reference in commonVerses) {
-    const text = commonVerses[reference]
+    const text = commonVerses[reference];
 
     // Cache the result
     verseCache.set(`${reference}-${translation}`, {
       text,
       copyright: `Scripture from ${translation}`,
-    })
+    });
 
     return {
       reference,
       text,
       translation,
       copyright: `Scripture from ${translation}`,
-    }
+    };
   }
 
   // For references we don't have, try to parse the reference and fetch from API.Bible
   try {
     // Try a different approach with the API.Bible - using the passages endpoint
-    const bibleId = BIBLE_IDS[translation as keyof typeof BIBLE_IDS] || DEFAULT_BIBLE_ID
+    const bibleId = BIBLE_IDS[translation as keyof typeof BIBLE_IDS] || DEFAULT_BIBLE_ID;
 
     // Only attempt this if we haven't already determined the API is having issues
     if (!apiIssueLogged) {
@@ -339,28 +658,28 @@ async function fetchFallbackVerse(reference: string, translation: string): Promi
       })
 
       if (passageResponse.ok) {
-        const passageData = await passageResponse.json()
+        const passageData = await passageResponse.json();
 
         if (passageData.data && passageData.data.length > 0) {
-          const passage = passageData.data[0]
-          const text = passage.content.replace(/<[^>]*>/g, "") // Remove HTML tags
+          const passage = passageData.data[0];
+          const text = passage.content.replace(/<[^>]*>/g, ""); // Remove HTML tags
 
           // Cache the result
           verseCache.set(`${reference}-${translation}`, {
             text,
             copyright: passage.copyright || `Scripture from ${translation}`,
-          })
+          });
 
           return {
             reference,
             text,
             translation,
             copyright: passage.copyright,
-          }
+          };
         }
       } else {
         // Mark that we've encountered API issues to avoid further attempts
-        apiIssueLogged = true
+        apiIssueLogged = true;
       }
     }
 
@@ -370,9 +689,9 @@ async function fetchFallbackVerse(reference: string, translation: string): Promi
       text: `"${reference}" - This verse is available in your Bible. We're currently using offline mode for verse lookup.`,
       translation,
       copyright: "Please refer to your physical Bible for the complete text.",
-    }
+    };
   } catch (error) {
-    console.error("Error in fallback verse fetch:", error)
+    console.error("Error in fallback verse fetch:", error);
 
     // Return a generic message when all attempts fail
     return {
@@ -380,7 +699,7 @@ async function fetchFallbackVerse(reference: string, translation: string): Promi
       text: `"${reference}" - This verse is available in your Bible. We're currently using offline mode for verse lookup.`,
       translation,
       copyright: "Please refer to your physical Bible for the complete text.",
-    }
+    };
   }
 }
 
@@ -388,8 +707,8 @@ async function fetchFallbackVerse(reference: string, translation: string): Promi
  * Fetches multiple verses at once
  */
 export async function fetchVerses(references: string[], translation = "ESV"): Promise<VerseResponse[]> {
-  const promises = references.map((ref) => fetchVerse(ref, translation))
-  return Promise.all(promises)
+  const promises = references.map((ref) => fetchVerse(ref, translation));
+  return Promise.all(promises);
 }
 
 /**
@@ -413,30 +732,32 @@ export async function getAvailableTranslations(): Promise<{ id: string; name: st
         "api-key": API_KEY,
       },
       next: { revalidate: 86400 }, // Cache for 24 hours
-    })
+    });
 
     if (!response.ok) {
       // Mark that we've encountered API issues
-      apiIssueLogged = true
-      throw new Error(`Failed to fetch translations: ${response.status} ${response.statusText}`)
+      apiIssueLogged = true;
+      throw new Error(
+        `Failed to fetch translations: ${response.status} ${response.statusText}`
+      );
     }
 
-    const data = await response.json()
+    const data = await response.json();
 
     if (!data.data) {
-      throw new Error("Invalid response format")
+      throw new Error("Invalid response format");
     }
 
     return data.data.map((bible: any) => ({
       id: bible.id,
       name: bible.name,
       abbreviation: bible.abbreviation,
-    }))
+    }));
   } catch (error) {
-    console.error("Error fetching translations:", error)
+    console.error("Error fetching translations:", error);
 
     // Mark that we've encountered API issues
-    apiIssueLogged = true
+    apiIssueLogged = true;
 
     // Return default translations when API fails
     return [
@@ -705,14 +1026,14 @@ const MOCK_SEARCH_RESULTS = {
       copyright: "Scripture quotations are from the ESV® Bible, copyright © 2001 by Crossway.",
     },
   ],
-}
+};
 
 /**
  * Search for studies based on a query
  * @param query The search query
  * @param limit Maximum number of results to return
  */
-export function searchStudies(query: string, limit = 5): any[] {
+export async function searchStudies(query: string, limit = 5): Promise<any[]> {
   const normalizedQuery = query.toLowerCase().trim()
   const results = []
 
@@ -733,14 +1054,14 @@ export function searchStudies(query: string, limit = 5): any[] {
         description: study.description,
         verses: study.verses,
         category: study.category,
-      })
+      });
     }
 
     // Limit to specified number of results
-    if (results.length >= limit) break
+    if (results.length >= limit) break;
   }
 
-  return results
+  return results;
 }
 
 // New function to get verse recommendations from Claude with better error handling
@@ -748,13 +1069,9 @@ async function getVerseRecommendationsFromClaude(query: string): Promise<string[
   try {
     // Check if we have the Anthropic API key
     if (!process.env.ANTHROPIC_API_KEY) {
-      console.log("Anthropic API key not available, skipping Claude recommendations")
+      console.log("Anthropic API key not available, skipping Claude recommendations");
       return []
     }
-
-    // Import the necessary functions from the AI SDK
-    const { anthropic } = await import("@ai-sdk/anthropic")
-    const { generateText } = await import("ai")
 
     // Create a more detailed prompt for Claude
     const prompt = `I'm looking for Bible verses related to this topic or question: "${query}"
@@ -772,7 +1089,7 @@ For example: "John 3:16, Romans 8:28, Philippians 4:13"`
 
     // Call Claude to get verse recommendations
     const { text } = await generateText({
-      model: anthropic("claude-3-haiku-20240307"),
+      model: anthropic(process.env.CLAUDE_MODEL!),
       prompt: prompt,
       temperature: 0.2, // Lower temperature for more focused results
       maxTokens: 200,
@@ -833,18 +1150,18 @@ export async function searchBible(query: string, translation = "ESV", limit = 10
     // Step 1: Check if we have mock results for common search terms
     const normalizedQuery = query.toLowerCase().trim()
 
-    for (const [term, results] of Object.entries(MOCK_SEARCH_RESULTS)) {
-      if (normalizedQuery.includes(term.toLowerCase())) {
-        console.log(`Using mock results for query containing "${term}"`)
-        return {
-          passages: results.map((result) => ({
-            reference: result.reference,
-            text: result.text,
-            copyright: result.copyright,
-          })),
-        }
-      }
-    }
+    // for (const [term, results] of Object.entries(MOCK_SEARCH_RESULTS)) {
+    //   if (normalizedQuery.includes(term.toLowerCase())) {
+    //     console.log(`Using mock results for query containing "${term}"`)
+    //     return {
+    //       passages: results.map((result) => ({
+    //         reference: result.reference,
+    //         text: result.text,
+    //         copyright: result.copyright,
+    //       })),
+    //     }
+    //   }
+    // }
 
     // Step 2: If we've already encountered API issues, skip the API search
     let apiSearchSucceeded = false
@@ -1109,3 +1426,35 @@ const STUDIES_DATABASE = [
     keywords: ["suffering", "suffer", "trial", "tribulation", "affliction", "hardship", "pain", "persecution"],
   },
 ]
+
+/**
+ * Utility function to extract clean text from HTML content returned by the Bible API
+ * @param htmlContent The HTML content from the API response
+ * @returns Clean plain text with HTML tags and entities properly handled
+ */
+function extractTextFromHtml(htmlContent: string): string {
+  if (!htmlContent) {
+    return '';
+  }
+  
+  // First, remove verse numbers
+  let cleanedHtml = htmlContent.replace(/<span data-number="\d+"[^>]*>(\d+)<\/span>/g, "");
+  
+  // Then remove all remaining HTML tags
+  let text = cleanedHtml.replace(/<[^>]*>/g, "");
+  
+  // Fix common HTML entities
+  text = text.replace(/&nbsp;/g, " ")
+            .replace(/&ldquo;/g, '"')
+            .replace(/&rdquo;/g, '"')
+            .replace(/&lsquo;/g, "'")
+            .replace(/&rsquo;/g, "'")
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&mdash;/g, "—")
+            .replace(/&ndash;/g, "-");
+  
+  // Trim extra whitespace and normalize spaces
+  return text.replace(/\s+/g, " ").trim();
+}

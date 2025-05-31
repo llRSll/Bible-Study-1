@@ -25,3 +25,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Supabase
+.supabase/
+supabase/.temp/
+supabase/.branches/
+supabase/config.toml
+supabase/seed.sql
+
+# Local Supabase data
+**/supabase/.temp/**
+**/supabase/.branches/**
+**/supabase/storage/**
+**/supabase/seed.sql
+**/supabase/config.toml
+**/supabase/edge-runtime-wasm
+
+# Supabase environment variables
+.env.local
+.env

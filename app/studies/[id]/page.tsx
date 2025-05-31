@@ -1,115 +1,98 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { ChevronLeft, Bookmark, Heart, Share2, MessageSquare, ChevronRight } from "lucide-react"
-import Link from "next/link"
+import { LikeButton } from "@/components/like-button"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
 import { VerseDisplay } from "@/components/verse-display"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getCurrentUser } from "@/lib/actions/auth"
+import { addToRecentStudies, getUserProfile, saveStudy, unsaveStudy } from "@/lib/actions/profile"
+import { getStudyById, type Study, toggleStudyPublicStatus } from "@/lib/actions/study"
+import { Bookmark, ChevronLeft, ChevronRight, EyeIcon, EyeOffIcon, Loader2, MessageSquare, Share2, Copy } from "lucide-react"
+import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
+import { use, useEffect, useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
-export default function StudyPage({ params }: { params: { id: string } }) {
+export default function StudyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(true)
-  const [liked, setLiked] = useState(false)
+  const [study, setStudy] = useState<Study | null>(null)
   const [bookmarked, setBookmarked] = useState(false)
+  const [bookmarkLoading, setBookmarkLoading] = useState(false)
   const [translation, setTranslation] = useState("ESV")
+  const [publishLoading, setPublishLoading] = useState(false)
   const { toast } = useToast()
+  const [error, setError] = useState<string | null>(null)
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [isCurrentUserOwner, setIsCurrentUserOwner] = useState(false)
+
+
+  // Check if the study is bookmarked
+  useEffect(() => {
+    const checkIfBookmarked = async () => {
+      try {
+        const { data: profileData, error: profileError } = await getUserProfile();
+        
+        if (profileError || !profileData) {
+          return;
+        }
+        
+        const saved = profileData.saved_studies?.includes(id) || false;
+        setBookmarked(saved);
+      } catch (err) {
+        console.error("Error checking if study is bookmarked:", err);
+      }
+    };
+    
+    if (id) {
+      checkIfBookmarked();
+    }
+  }, [id]);
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 1000)
-    return () => clearTimeout(timer)
-  }, [])
-
-  // In a real app, you would fetch the study data based on the ID
-  const studyData = {
-    title: params.id === "forgiveness" ? "Forgiveness" : "The Beatitudes",
-    scriptures:
-      params.id === "forgiveness"
-        ? [
-            {
-              reference: "Matthew 6:14-15",
-              translation: "ESV",
-            },
-            {
-              reference: "Colossians 3:13",
-              translation: "ESV",
-            },
-            {
-              reference: "Matthew 18:21-22",
-              translation: "ESV",
-            },
-            {
-              reference: "Ephesians 4:32",
-              translation: "ESV",
-            },
-          ]
-        : [
-            {
-              reference: "Matthew 5:3-4",
-              translation: "ESV",
-            },
-            {
-              reference: "Matthew 5:5-6",
-              translation: "ESV",
-            },
-            {
-              reference: "Matthew 5:7-8",
-              translation: "ESV",
-            },
-          ],
-    insights:
-      params.id === "forgiveness"
-        ? [
-            {
-              title: "The Importance of Forgiveness",
-              content:
-                "Forgiveness is a central theme in Christianity. Jesus teaches that our willingness to forgive others is directly connected to receiving God's forgiveness. It's not optional for believers but a fundamental aspect of following Christ.",
-            },
-            {
-              title: "Unlimited Forgiveness",
-              content:
-                'When Peter asked Jesus how many times he should forgive someone, Jesus answered "seventy-seven times," indicating that forgiveness should be unlimited. Christians are called to forgive repeatedly, just as God repeatedly forgives us.',
-            },
-            {
-              title: "Forgiveness as Reflection of God's Character",
-              content:
-                "When we forgive others, we reflect God's character. Paul reminds us in Ephesians that we should forgive as God in Christ has forgiven us. Our forgiveness of others is a response to and reflection of the forgiveness we've received.",
-            },
-          ]
-        : [
-            {
-              title: "Understanding the Beatitudes",
-              content:
-                "The Beatitudes are declarations of blessedness, describing the ideal disciple and the rewards that will be theirs. They form the opening section of the Sermon on the Mount.",
-            },
-            {
-              title: "Poor in Spirit",
-              content:
-                'To be "poor in spirit" is to recognize your spiritual poverty and need for God. It refers to humility before God, acknowledging that we are nothing without Him.',
-            },
-            {
-              title: "The Kingdom Promise",
-              content:
-                "The kingdom of heaven is both a present reality and a future hope. Those who humble themselves before God experience His reign in their lives now, while also awaiting the full realization of His kingdom in the age to come.",
-            },
-          ],
-    reflectionQuestions:
-      params.id === "forgiveness"
-        ? [
-            "Is there someone in your life you need to forgive? What is holding you back?",
-            "How has experiencing God's forgiveness changed your ability to forgive others?",
-            "What practical steps can you take to forgive someone who has deeply hurt you?",
-            "How might your relationships change if you practiced forgiveness more freely?",
-          ]
-        : [
-            "In what ways do you recognize your spiritual poverty and need for God?",
-            'How does being "poor in spirit" differ from low self-esteem?',
-            "How might embracing meekness change your relationships with others?",
-            'What does it mean to "hunger and thirst for righteousness" in your daily life?',
-          ],
-  }
+    // Fetch the study data from Supabase
+    const fetchStudy = async () => {
+      setLoading(true)
+      
+      try {
+        const result = await getStudyById(id);
+        
+        if (result.error) {
+          console.error("Error fetching study:", result.error);
+          setError("Failed to load study");
+          setStudy(null);
+        } else if (!result.data) {
+          setError("Study not found");
+          setStudy(null);
+        } else {
+          setStudy(result.data);
+          setError(null);
+          
+          // Check if current user is the owner
+          const { data } = await getCurrentUser();
+          setIsCurrentUserOwner(data?.id === result.data.user_id);
+          
+          // Add to recent studies if not already done. If already done, update the last read time
+           addToRecentStudies(id);
+         
+        }
+      } catch (err) {
+        console.error("Error fetching study:", err);
+        setError("An unexpected error occurred");
+        setStudy(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStudy();
+  }, [id]);
 
   const handleTranslationChange = (value: string) => {
     setTranslation(value)
@@ -123,30 +106,143 @@ export default function StudyPage({ params }: { params: { id: string } }) {
       duration: 2000,
     })
   }
+  
+  const handleBookmarkToggle = async () => {
+    if (!study?.id) return;
+    
+    setBookmarkLoading(true);
+    try {
+      if (bookmarked) {
+        // If already bookmarked, unsave it
+        await unsaveStudy(study.id);
+        setBookmarked(false);
+        toast({
+          title: "Removed from bookmarks",
+          description: "Study has been removed from your bookmarks.",
+          duration: 2000,
+        });
+      } else {
+        // If not bookmarked, save it
+        await saveStudy(study.id);
+        setBookmarked(true);
+        toast({
+          title: "Bookmarked",
+          description: "Study has been added to your bookmarks.",
+          duration: 2000,
+        });
+      }
+    } catch (err) {
+      console.error("Error toggling bookmark:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update bookmark status. Please try again.",
+        duration: 2000,
+        variant: "destructive",
+      });
+    } finally {
+      setBookmarkLoading(false);
+    }
+  };
+  
+  const handlePrivacyToggle = async () => {
+    if (!study?.id) return;
+    
+    setPublishLoading(true);
+    try {
+      const { data, error } = await toggleStudyPublicStatus(study.id);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update study privacy",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update the local study state with the updated isPublic value
+      setStudy({
+        ...study,
+        isPublic: data.isPublic,
+      });
+      
+      toast({
+        title: data.isPublic ? "Study Published" : "Study Unpublished",
+        description: data.isPublic 
+          ? "Your study is now public and can be viewed by others." 
+          : "Your study is now private and only visible to you.",
+        duration: 2000,
+      });
+    } catch (err) {
+      console.error("Error toggling privacy:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update study privacy. Please try again.",
+        duration: 2000,
+        variant: "destructive",
+      });
+    } finally {
+      setPublishLoading(false);
+    }
+  };
+
+
+  const handleShare = () => {
+    setShareDialogOpen(true);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      const url = `${window.location.origin}${pathname}`;
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Link copied!",
+        description: "The study link has been copied to your clipboard.",
+        duration: 2000,
+      });
+      setShareDialogOpen(false);
+    } catch (error) {
+      console.error('Error sharing:', error);
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the link. Please try again.",
+        variant: "destructive",
+        duration: 2000,
+      });
+    }
+  };
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen">
-        <div className="study-header">
-          <Link href="/studies" className="back-button">
-            <ChevronLeft className="h-6 w-6" />
-          </Link>
-          <h1 className="header-title">Loading...</h1>
+        <div className="flex flex-col min-h-screen bg-white items-center justify-center">
+          <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+          <p className="mt-4 text-sm sm:text-base text-slate-500">loading study...</p>
         </div>
-        <div className="study-content">
-          <div className="h-8 w-3/4 loading-skeleton mb-4"></div>
+      )
+  }
 
-          <div className="h-5 w-1/3 loading-skeleton mb-4"></div>
-          <div className="h-32 loading-skeleton mb-4"></div>
-          <div className="h-32 loading-skeleton mb-4"></div>
-
-          <div className="h-5 w-1/3 loading-skeleton mb-4"></div>
-          <div className="h-24 loading-skeleton mb-4"></div>
-          <div className="h-24 loading-skeleton mb-4"></div>
-
-          <div className="h-5 w-1/3 loading-skeleton mb-4"></div>
-          <div className="h-16 loading-skeleton mb-4"></div>
-          <div className="h-16 loading-skeleton mb-4"></div>
+  if (error || !study) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <div className="study-header px-4 sm:px-6 py-4 sm:py-6 border-b">
+          <Link href="/studies" className="back-button">
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+          </Link>
+          <h1 className="header-title text-lg sm:text-2xl font-bold">Error</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center flex-1 p-4 sm:p-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-red-500 mb-3 sm:mb-4">
+            {error || "Study not found"}
+          </h2>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 text-center">
+            We couldn't load the study you requested. Please try again later.
+          </p>
+          <Link
+            href="/studies"
+            className="bg-primary text-white py-2 px-4 sm:px-6 rounded-lg hover:bg-primary/90 transition-colors text-sm sm:text-base"
+          >
+            Return to Studies
+          </Link>
         </div>
       </div>
     )
@@ -154,91 +250,134 @@ export default function StudyPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex flex-col min-h-screen pb-16">
-      <div className="study-header">
+      <div className="study-header px-4 sm:px-6 py-4 sm:py-6 border-b">
         <Link href="/studies" className="back-button">
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
         </Link>
-        <h1 className="header-title">{studyData.title}</h1>
+        <h1 className="header-title text-lg sm:text-2xl font-bold">{study.title}</h1>
       </div>
 
-      <div className="study-content">
-        <h1 className="study-title">{studyData.title}</h1>
-
+      <div className="study-content px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex justify-end mb-4">
           <Select value={translation} onValueChange={handleTranslationChange}>
-            <SelectTrigger className="w-24">
+            <SelectTrigger className="w-20 sm:w-24 text-sm sm:text-base">
               <SelectValue placeholder="Translation" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ESV">ESV</SelectItem>
-              <SelectItem value="KJV">KJV</SelectItem>
-              <SelectItem value="NIV">NIV</SelectItem>
-              <SelectItem value="NASB">NASB</SelectItem>
-              <SelectItem value="NLT">NLT</SelectItem>
+              <SelectItem value="ESV" className="text-sm sm:text-base">ESV</SelectItem>
+              <SelectItem value="KJV" className="text-sm sm:text-base">KJV</SelectItem>
+              <SelectItem value="NIV" className="text-sm sm:text-base">NIV</SelectItem>
+              <SelectItem value="NASB" className="text-sm sm:text-base">NASB</SelectItem>
+              <SelectItem value="NLT" className="text-sm sm:text-base">NLT</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <h2 className="section-title">Scripture</h2>
+        <h2 className="text-[3.2vw] sm:text-lg font-semibold mb-3 sm:mb-4 text-slate-900">Scripture</h2>
 
-        <div className="scripture-cards">
-          {studyData.scriptures.map((scripture, index) => (
-            <VerseDisplay key={index} reference={scripture.reference} translation={translation} />
+        <div className="space-y-4">
+          {study.verses.map((verse, index) => (
+            <VerseDisplay key={index} reference={verse} translation={translation} />
           ))}
         </div>
 
-        <h2 className="section-title">Study Insights</h2>
+        <h2 className="text-[3.2vw] sm:text-lg font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 text-slate-900">Study Insights</h2>
 
-        <div className="insight-cards">
-          {studyData.insights.map((insight, index) => (
-            <div key={index} className="insight-card">
-              <h3 className="insight-title">{insight.title}</h3>
-              <p className="insight-content">{insight.content}</p>
+        <div className="space-y-4">
+          {study.insights.map((insight, index) => (
+            <div key={index} className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+              <h3 className="text-[3.2vw] sm:text-lg font-semibold mb-2 text-slate-900">{insight.title}</h3>
+              <p className="text-[2.8vw] sm:text-base text-slate-700 leading-relaxed">{insight.description}</p>
             </div>
           ))}
         </div>
 
-        <h2 className="section-title">Reflection Questions</h2>
-
-        <div className="question-cards">
-          {studyData.reflectionQuestions.map((question, index) => (
-            <div key={index} className="question-card">
-              <div className="question-number">{index + 1}</div>
-              <p className="question-text">{question}</p>
+        {study.context && (
+          <>
+            <h2 className="text-[3.2vw] sm:text-lg font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 text-slate-900">Context</h2>
+            <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed">{study.context}</p>
             </div>
-          ))}
-        </div>
+          </>
+        )}
+
+        {study.application && (
+          <>
+            <h2 className="text-[3.2vw] sm:text-lg font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 text-slate-900">Application</h2>
+            <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed">{study.application}</p>
+            </div>
+          </>
+        )}
+
+        {study.relatedQuestions && study.relatedQuestions.length > 0 && (
+          <>
+            <h2 className="text-[3.2vw] sm:text-lg font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 text-slate-900">Reflection Questions</h2>
+            <div className="space-y-3">
+              {study.relatedQuestions.map((question, index) => (
+                <div key={index} className="flex items-start gap-3 bg-white border border-slate-100 rounded-xl p-4 sm:p-5 shadow-sm">
+                  <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center">
+                    <span className="text-white font-semibold text-xs sm:text-sm">{index + 1}</span>
+                  </div>
+                  <p className="text-[2.8vw] sm:text-base text-slate-700 leading-relaxed">{question}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="study-actions">
-        <div className="action-buttons">
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="w-[90vw] sm:max-w-md p-4 sm:p-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-[3.2vw] sm:text-xl font-bold">Share Study</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
+            <Input
+              readOnly
+              value={typeof window !== 'undefined' ? `${window.location.origin}${pathname}` : ''}
+              className="flex-1 text-[2.8vw] sm:text-base h-10 sm:h-11"
+            />
+            <Button 
+              onClick={handleCopyLink} 
+              className="flex items-center justify-center gap-2 text-[2.8vw] sm:text-base h-10 sm:h-11 px-4 sm:px-6"
+            >
+              <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
+              Copy
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="study-actions fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+        <div className="flex justify-center items-center gap-4">
           <button
-            className={`action-button ${bookmarked ? "active" : ""}`}
-            onClick={() => setBookmarked(!bookmarked)}
-            aria-label="Bookmark"
+            className={`action-button ${bookmarked ? "active" : ""} p-2 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center`}
+            onClick={handleBookmarkToggle}
+            disabled={bookmarkLoading}
+            aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
           >
-            <Bookmark className="action-icon" fill={bookmarked ? "currentColor" : "none"} />
+            <Bookmark className="h-5 w-5 sm:h-6 sm:w-6" fill={bookmarked ? "currentColor" : "none"} />
           </button>
-          <button
-            className={`action-button ${liked ? "active" : ""}`}
-            onClick={() => setLiked(!liked)}
-            aria-label="Like"
+          <div className="flex items-center justify-center">
+            <LikeButton 
+              studyId={study.id || ""} 
+              initialLikes={study.likes || 0}
+            />
+          </div>
+          <button 
+            className="action-button p-2 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center" 
+            aria-label="Share"
+            onClick={handleShare}
           >
-            <Heart className="action-icon" fill={liked ? "currentColor" : "none"} />
+            <Share2 className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
-          <button className="action-button" aria-label="Share">
-            <Share2 className="action-icon" />
-          </button>
-          <button className="action-button" aria-label="Comment">
-            <MessageSquare className="action-icon" />
-          </button>
-        </div>
-        <div className="pagination-buttons">
-          <button className="pagination-button" aria-label="Previous page">
-            <ChevronLeft className="pagination-icon" />
-          </button>
-          <button className="pagination-button" aria-label="Next page">
-            <ChevronRight className="pagination-icon" />
+          <button 
+            className="action-button p-2 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center" 
+            aria-label="Comment"
+            onClick={() => router.push('/ask')}
+          >
+            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
       </div>
